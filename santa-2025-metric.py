@@ -163,3 +163,12 @@ def score(solution: pd.DataFrame, submission: pd.DataFrame, row_id_column_name: 
         total_score += group_score
 
     return float(total_score)
+
+# %%
+    # score the submission
+    row_id_column_name = 'id'
+    # data = [['002_0', 's-0.2', 's-0.3', 's335'], ['002_1', 's0.49', 's0.21', 's155']]
+    # submission = pd.DataFrame(columns=['id', 'x', 'y', 'deg'], data=data)
+    submission = pd.read_csv('sample_submission.csv')
+    solution = submission[['id']].copy()
+    score(solution, submission, row_id_column_name)
