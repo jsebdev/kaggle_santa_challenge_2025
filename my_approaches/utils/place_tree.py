@@ -5,7 +5,8 @@ from decimal import Decimal
 from shapely import affinity
 from shapely.strtree import STRtree
 
-from my_approaches.utils.tree import ChristmasTree
+# from my_approaches.utils.tree import ChristmasTree
+from .tree import ChristmasTree
 
 
 def initialize_greedy(num_trees, scale_factor, seed=None):

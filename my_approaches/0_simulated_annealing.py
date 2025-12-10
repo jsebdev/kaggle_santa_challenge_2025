@@ -26,6 +26,9 @@
 
 # %%
 import sys
+sys.path.append('.')
+
+# %%
 import math
 import random
 from decimal import Decimal, getcontext
@@ -40,10 +43,10 @@ from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
 
-sys.path.append('.')
-from utils.tree_utils import ChristmasTree, scale_factor
+from utils.tree import ChristmasTree, scale_factor
 from utils.collision import has_collision
 from utils.bounding_square import calculate_bounding_square
+from utils.place_tree import initialize_greedy
 
 getcontext().prec = 25
 pd.set_option('display.float_format', '{:.12f}'.format)
@@ -373,7 +376,7 @@ def optimize_all_configurations(
         # Use the optimized (n-1)-tree configuration and add one more tree
         # This is faster than starting from scratch, but may not find global optimum
         if n == 1:
-            initial_trees = initialize_greedy(n, seed=seed)
+            initial_trees = initialize_greedy(n, scale_factor, seed=seed)
         else:
             # Start with previous solution + one new tree at origin
             prev_trees = configurations[n-1][0]

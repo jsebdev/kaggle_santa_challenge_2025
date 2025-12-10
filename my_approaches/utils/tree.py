@@ -6,7 +6,7 @@ from shapely.geometry import Polygon
 
 # Set precision for Decimal
 getcontext().prec = 25
-scale_factor = Decimal('1e15')
+scale_factor = Decimal('1e15') # why is this different than in santa-2025-metric.py?
 
 
 class ChristmasTree:
