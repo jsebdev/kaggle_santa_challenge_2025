@@ -6,7 +6,7 @@ from shapely.ops import unary_union
 from .bounding_square import calculate_bounding_square
 
 
-def plot_configuration(trees, side_length=None, title="Tree Configuration"):
+def plot_configuration(trees, side_length=None, title="Tree Configuration", show=True) -> plt.Axes:
     """
     Visualize a tree configuration with its bounding square.
 
@@ -14,6 +14,7 @@ def plot_configuration(trees, side_length=None, title="Tree Configuration"):
         trees: List of ChristmasTree objects
         side_length: Side length of bounding square (optional, will be calculated if not provided)
         title: Plot title
+        show: Whether to call plt.show() immediately (default True)
     """
     _, ax = plt.subplots(figsize=(8, 8))
     num_trees = len(trees)
@@ -70,4 +71,6 @@ def plot_configuration(trees, side_length=None, title="Tree Configuration"):
     ax.grid(True, alpha=0.3)
     plt.title(f'{title}\n{num_trees} Trees: Side = {side_length:.6f}')
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
+    return ax

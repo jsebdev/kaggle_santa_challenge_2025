@@ -374,6 +374,13 @@ test_configurations = optimize_all_configurations(
 total_score = sum(float(side**2) / n for n, (_, side) in test_configurations.items())
 print(f"\nTotal score for {len(test_configurations)} configurations: {total_score:.6f}")
 
+# %%
+
+print(test_configurations[2])
+displacement = (test_configurations[2][0][1].center_x, test_configurations[2][0][1].center_y)
+for tree in test_configurations[2][0]:
+    print(f'Tree: x={tree.center_x - displacement[0]}, y={tree.center_y - displacement[1]}, angle={float(tree.angle) * (np.pi / 180)}')
+
 # %% [markdown]
 # ## Full Run (Uncomment to execute)
 #
