@@ -9,6 +9,7 @@ sys.path.append('../../')
 
 from utils.plot import plot_configuration
 from utils.tree import ChristmasTree
+from utils.metrics import score_group
 import numpy as np
 from scipy.optimize import fsolve, least_squares
 import matplotlib.pyplot as plt
@@ -203,3 +204,5 @@ for label, (x, y) in zip(points_labels, points_coords):
 
 plt.show()
 
+# %%
+score_group(trees)
