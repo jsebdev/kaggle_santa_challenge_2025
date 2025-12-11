@@ -1,6 +1,6 @@
 # %%
-%load_ext autoreload
-%autoreload 2
+# %load_ext autoreload
+# %autoreload 2
 
 import sys
 
@@ -10,7 +10,7 @@ sys.path.append('../../')
 from utils.plot import plot_configuration
 from utils.tree import ChristmasTree
 import numpy as np
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, least_squares
 import matplotlib.pyplot as plt
 
 
@@ -23,7 +23,7 @@ for i in range(len(tree._tree_points)):
 
 # %%
 
-def equations(vars):
+def system(vars):
     # each point from a to k is a point in one of the trees
     # each point can have 5 variables associated.
     # e.g.
@@ -137,11 +137,24 @@ initial_guess = [
     0.3, 1.0  #k
 ]
 
-
-solution = fsolve(equations, initial_guess)
+####################################################################################################
+# solution with no bound constraints
+# solution = fsolve(equations, initial_guess)
+####################################################################################################
+n_vars = len(initial_guess)
+lower_bounds = [-np.inf] * n_vars
+upper_bounds = [np.inf] * n_vars
+# Add constraint: t1 > 0 (index 0)
+lower_bounds[0] = 0  # t1 >= 0
+result = least_squares(system, initial_guess, bounds=(lower_bounds, upper_bounds))
+solution = result.x
+####################################################################################################
 
 print('>>>>> solve_2_trees_equations.py:105 "solution"')
 print(solution)
+print(f'\nOptimization success: {result.success}')
+print(f'Cost (sum of squares): {result.cost}')
+print(f'Optimality: {result.optimality}')
 
 (
     # trees angles
