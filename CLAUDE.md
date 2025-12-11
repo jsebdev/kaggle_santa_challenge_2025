@@ -52,15 +52,16 @@ The scoring function expects a CSV with columns: `id`, `x`, `y`, `deg` where val
 
 ### Core Components
 
-**ChristmasTree Class** (found in multiple files with different scale_factor values):
+**ChristmasTree Class** (`my_approaches/utils/tree.py`):
 - Represents a rotatable Christmas tree with fixed dimensions
 - Uses high-precision Decimal arithmetic to avoid floating-point errors
 - Creates a shapely Polygon representing the tree geometry with trunk and three tiers
-- **Critical:** Different files use different `scale_factor` values:
-  - `santa-2025-getting-started.py`: `1e15`
-  - `santa-2025-metric.py`: `1e18`
-  - `my_approaches/utils/tree_utils.py`: `1e15`
-  - The scale factor must match between submission generation and scoring
+- **Internal Implementation:** Uses `_scale_factor = 1e18` (private class variable) to maintain numerical precision in Shapely operations. Matches `santa-2025-metric.py` for consistency with official scoring.
+- **Public Interface:** Provides clean methods for tree manipulation:
+  - `tree.move(dx, dy)` - translate tree by delta
+  - `tree.rotate(angle_delta)` - rotate tree by delta angle
+  - `tree.set_transform(x, y, angle)` - set absolute position and rotation
+- **CRITICAL ARCHITECTURE RULE:** Approach code should NEVER import or use `_scale_factor` directly. Work only with logical coordinates (`center_x`, `center_y`, `angle`) and use tree methods. The scale factor is an implementation detail for Shapely precision.
 
 **Tree Placement Algorithm** (`initialize_trees` in santa-2025-getting-started.py):
 - Greedy approach that builds on previous N-tree configurations
@@ -83,19 +84,31 @@ The scoring function expects a CSV with columns: `id`, `x`, `y`, `deg` where val
 
 ### Project Structure
 
-- `santa-2025-getting-started.py/.ipynb`: Main starter code with tree placement algorithm and visualization
-- `santa-2025-metric.py/.ipynb`: Official scoring metric implementation
+- `santa-2025-getting-started.py/.ipynb`: Main starter code with tree placement algorithm and visualization (reference only, not used in custom approaches)
+- `santa-2025-metric.py/.ipynb`: Official scoring metric implementation (DO NOT MODIFY)
 - `sample_submission.csv`: Generated submission file
 - `my_approaches/`: Custom solution approaches
-  - `my_approaches/utils/tree_utils.py`: Shared ChristmasTree class and utilities
-  - `my_approaches/0_start_by_something.py/.ipynb`: Initial custom approach
+  - `my_approaches/utils/tree.py`: Shared ChristmasTree class with methods for tree manipulation
+  - `my_approaches/utils/collision.py`: Collision detection using STRtree spatial indexing
+  - `my_approaches/utils/bounding_square.py`: Calculate bounding square for scoring
+  - `my_approaches/utils/place_tree.py`: Greedy tree placement initialization
+  - `my_approaches/utils/plot.py`: Visualization utilities
+  - `my_approaches/0_simulated_annealing.py/.ipynb`: Simulated annealing optimization approach
 
 ### Key Constraints and Considerations
 
 1. **Decimal Precision:** All calculations use Python's Decimal type with 25-digit precision to avoid floating-point errors in geometric calculations
-2. **Scaling Factor:** Shapely polygons are scaled by large factors (1e15 or 1e18) to maintain precision, then rescaled for final results
+2. **Scaling Factor (Internal):** Shapely polygons are internally scaled by 1e18 to maintain precision. This is hidden in the ChristmasTree class - approach code should never handle scaling directly.
 3. **Bounding Square:** Score uses the largest dimension of the bounding rectangle to form a square (not just the rectangle area)
-4. **Progressive Building:** The getting-started approach reuses previous (N-1)-tree configurations when building N-tree configurations, which speeds up generation but may not find global optima
+4. **Progressive Building:** Optimization approaches can reuse previous (N-1)-tree configurations when building N-tree configurations, which speeds up generation but may not find global optima
+
+### Architectural Best Practices
+
+**Separation of Concerns:**
+- **Utility modules** (`my_approaches/utils/`): Handle internal implementation details like scale factors, polygon geometry, and Shapely operations
+- **Approach modules** (`my_approaches/*.py`): Focus only on the optimization algorithm logic, working with logical coordinates
+- **Rule:** Approach code should work in "logical space" - only manipulating tree positions (center_x, center_y, angle) and using utility functions/methods
+- **Anti-pattern:** Importing `_scale_factor`, directly manipulating `polygon` attributes, or using `affinity.translate/rotate` in approach code
 
 ## Rules
 - When modifying code that affects the veracity of this file, ensure to update this documentation accordingly.

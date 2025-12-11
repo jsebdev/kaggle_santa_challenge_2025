@@ -2,7 +2,7 @@ from shapely.ops import unary_union
 from decimal import Decimal
 
 
-def calculate_bounding_square(trees, scale_factor):
+def calculate_bounding_square(trees):
     """
     Calculate the side length of the minimum bounding square for a set of trees.
 
@@ -11,7 +11,6 @@ def calculate_bounding_square(trees, scale_factor):
 
     Args:
         trees: List of ChristmasTree objects
-        scale_factor: The scaling factor used when creating tree polygons
 
     Returns:
         Decimal: Side length of the bounding square
@@ -27,7 +26,8 @@ def calculate_bounding_square(trees, scale_factor):
     bounds = unary_union(all_polygons).bounds
 
     # Convert from scaled coordinates back to original coordinates
-    # Tree polygons are scaled up by scale_factor for precision, so we divide here
+    # Tree polygons are scaled up by _scale_factor for precision, so we divide here
+    scale_factor = trees[0]._scale_factor
     minx = Decimal(str(bounds[0])) / scale_factor
     miny = Decimal(str(bounds[1])) / scale_factor
     maxx = Decimal(str(bounds[2])) / scale_factor

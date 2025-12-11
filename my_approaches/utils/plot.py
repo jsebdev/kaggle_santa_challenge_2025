@@ -1,0 +1,73 @@
+import matplotlib.pyplot as plt
+from decimal import Decimal
+from matplotlib.patches import Rectangle
+from shapely.ops import unary_union
+
+from .bounding_square import calculate_bounding_square
+
+
+def plot_configuration(trees, side_length=None, title="Tree Configuration"):
+    """
+    Visualize a tree configuration with its bounding square.
+
+    Args:
+        trees: List of ChristmasTree objects
+        side_length: Side length of bounding square (optional, will be calculated if not provided)
+        title: Plot title
+    """
+    _, ax = plt.subplots(figsize=(8, 8))
+    num_trees = len(trees)
+    colors = plt.cm.viridis([i / max(num_trees, 1) for i in range(num_trees)])
+
+    if not trees:
+        return
+
+    all_polygons = [t.polygon for t in trees]
+    # unary_union merges all tree polygons into one big shape
+    # .bounds gives us (minx, miny, maxx, maxy) of that combined shape
+    bounds = unary_union(all_polygons).bounds
+
+    scale_factor = trees[0]._scale_factor
+
+    for i, tree in enumerate(trees):
+        x_scaled, y_scaled = tree.polygon.exterior.xy
+        x = [Decimal(str(val)) / scale_factor for val in x_scaled]
+        y = [Decimal(str(val)) / scale_factor for val in y_scaled]
+        ax.plot(x, y, color=colors[i], linewidth=1)
+        ax.fill(x, y, alpha=0.5, color=colors[i])
+
+    minx = Decimal(str(bounds[0])) / scale_factor
+    miny = Decimal(str(bounds[1])) / scale_factor
+    maxx = Decimal(str(bounds[2])) / scale_factor
+    maxy = Decimal(str(bounds[3])) / scale_factor
+
+    width = maxx - minx
+    height = maxy - miny
+
+    if side_length is None:
+        side_length = calculate_bounding_square(trees)
+
+    square_x = minx if width >= height else minx - (side_length - width) / 2
+    square_y = miny if height >= width else miny - (side_length - height) / 2
+
+    bounding_square = Rectangle(
+        (float(square_x), float(square_y)),
+        float(side_length),
+        float(side_length),
+        fill=False,
+        edgecolor='red',
+        linewidth=2,
+        linestyle='--'
+    )
+    ax.add_patch(bounding_square)
+
+    padding = 0.5
+    ax.set_xlim(float(square_x - Decimal(str(padding))),
+                float(square_x + side_length + Decimal(str(padding))))
+    ax.set_ylim(float(square_y - Decimal(str(padding))),
+                float(square_y + side_length + Decimal(str(padding))))
+    ax.set_aspect('equal', adjustable='box')
+    ax.grid(True, alpha=0.3)
+    plt.title(f'{title}\n{num_trees} Trees: Side = {side_length:.6f}')
+    plt.tight_layout()
+    plt.show()

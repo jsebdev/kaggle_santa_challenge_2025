@@ -21,11 +21,12 @@
 # improvements and occasionally accepting worse solutions to escape local minima.
 
 # %%
-%load_ext autoreload
-%autoreload 2
+# %load_ext autoreload
+# %autoreload 2
 
 # %%
 import sys
+
 sys.path.append('.')
 
 # %%
@@ -43,10 +44,11 @@ from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
 
-from utils.tree import ChristmasTree, scale_factor
+from utils.tree import ChristmasTree
 from utils.collision import has_collision
 from utils.bounding_square import calculate_bounding_square
 from utils.place_tree import initialize_greedy
+from utils.plot import plot_configuration
 
 getcontext().prec = 25
 pd.set_option('display.float_format', '{:.12f}'.format)
@@ -63,7 +65,7 @@ def calculate_energy(trees):
     Returns:
         Decimal: The bounding square side length (energy to minimize)
     """
-    return calculate_bounding_square(trees, scale_factor)
+    return calculate_bounding_square(trees)
 
 
 # %%
@@ -85,18 +87,11 @@ def perturb_translation(trees, tree_idx, max_delta=0.1):
     tree = new_trees[tree_idx]
 
     # Random translation in both x and y directions
-    dx = Decimal(str(random.uniform(-max_delta, max_delta)))
-    dy = Decimal(str(random.uniform(-max_delta, max_delta)))
+    dx = random.uniform(-max_delta, max_delta)
+    dy = random.uniform(-max_delta, max_delta)
 
-    # Update tree position
-    tree.center_x += dx
-    tree.center_y += dy
-
-    # Move the polygon geometry (remember to scale by scale_factor)
-    tree.polygon = affinity.translate(
-        tree.polygon,
-        xoff=float(dx * scale_factor),
-        yoff=float(dy * scale_factor))
+    # Move the tree using its clean method
+    tree.move(dx, dy)
 
     return new_trees
 
@@ -118,18 +113,10 @@ def perturb_rotation(trees, tree_idx, max_angle=15):
     tree = new_trees[tree_idx]
 
     # Rotate by a random angle (positive or negative)
-    old_angle = tree.angle
-    delta_angle = Decimal(str(random.uniform(-max_angle, max_angle)))
-    new_angle = old_angle + delta_angle
+    delta_angle = random.uniform(-max_angle, max_angle)
 
-    # Rebuild the tree polygon with the new angle
-    # (Easier than using affinity.rotate, ensures consistency)
-    tree.angle = new_angle
-    tree.polygon = ChristmasTree(
-        center_x=str(tree.center_x),
-        center_y=str(tree.center_y),
-        angle=str(new_angle)
-    ).polygon
+    # Rotate the tree using its clean method
+    tree.rotate(delta_angle)
 
     return new_trees
 
@@ -153,23 +140,9 @@ def perturb_swap(trees, idx1, idx2):
     pos1 = (new_trees[idx1].center_x, new_trees[idx1].center_y)
     pos2 = (new_trees[idx2].center_x, new_trees[idx2].center_y)
 
-    # Move tree1 to position2 (keeping its rotation)
-    new_trees[idx1].center_x = pos2[0]
-    new_trees[idx1].center_y = pos2[1]
-    new_trees[idx1].polygon = ChristmasTree(
-        center_x=str(pos2[0]),
-        center_y=str(pos2[1]),
-        angle=str(new_trees[idx1].angle)
-    ).polygon
-
-    # Move tree2 to position1 (keeping its rotation)
-    new_trees[idx2].center_x = pos1[0]
-    new_trees[idx2].center_y = pos1[1]
-    new_trees[idx2].polygon = ChristmasTree(
-        center_x=str(pos1[0]),
-        center_y=str(pos1[1]),
-        angle=str(new_trees[idx2].angle)
-    ).polygon
+    # Swap positions (keeping rotations)
+    new_trees[idx1].set_transform(pos2[0], pos2[1], new_trees[idx1].angle)
+    new_trees[idx2].set_transform(pos1[0], pos1[1], new_trees[idx2].angle)
 
     return new_trees
 
@@ -275,69 +248,6 @@ def simulated_annealing(
 
 
 # %%
-def plot_configuration(trees, side_length, title="Tree Configuration"):
-    """
-    Visualize a tree configuration with its bounding square.
-
-    Args:
-        trees: List of ChristmasTree objects
-        side_length: Side length of bounding square
-        title: Plot title
-    """
-    _, ax = plt.subplots(figsize=(8, 8))
-    num_trees = len(trees)
-    colors = plt.cm.viridis([i / max(num_trees, 1) for i in range(num_trees)])
-
-    if not trees:
-        return
-
-    all_polygons = [t.polygon for t in trees]
-    # unary_union merges all tree polygons into one big shape
-    # .bounds gives us (minx, miny, maxx, maxy) of that combined shape
-    bounds = unary_union(all_polygons).bounds
-
-    for i, tree in enumerate(trees):
-        x_scaled, y_scaled = tree.polygon.exterior.xy
-        x = [Decimal(str(val)) / scale_factor for val in x_scaled]
-        y = [Decimal(str(val)) / scale_factor for val in y_scaled]
-        ax.plot(x, y, color=colors[i], linewidth=1)
-        ax.fill(x, y, alpha=0.5, color=colors[i])
-
-    minx = Decimal(str(bounds[0])) / scale_factor
-    miny = Decimal(str(bounds[1])) / scale_factor
-    maxx = Decimal(str(bounds[2])) / scale_factor
-    maxy = Decimal(str(bounds[3])) / scale_factor
-
-    width = maxx - minx
-    height = maxy - miny
-
-    square_x = minx if width >= height else minx - (side_length - width) / 2
-    square_y = miny if height >= width else miny - (side_length - height) / 2
-
-    bounding_square = Rectangle(
-        (float(square_x), float(square_y)),
-        float(side_length),
-        float(side_length),
-        fill=False,
-        edgecolor='red',
-        linewidth=2,
-        linestyle='--'
-    )
-    ax.add_patch(bounding_square)
-
-    padding = 0.5
-    ax.set_xlim(float(square_x - Decimal(str(padding))),
-                float(square_x + side_length + Decimal(str(padding))))
-    ax.set_ylim(float(square_y - Decimal(str(padding))),
-                float(square_y + side_length + Decimal(str(padding))))
-    ax.set_aspect('equal', adjustable='box')
-    ax.grid(True, alpha=0.3)
-    plt.title(f'{title}\n{num_trees} Trees: Side = {side_length:.6f}')
-    plt.tight_layout()
-    plt.show()
-
-
-# %%
 def optimize_all_configurations(
     max_trees=200,
     sa_params=None,
@@ -376,7 +286,7 @@ def optimize_all_configurations(
         # Use the optimized (n-1)-tree configuration and add one more tree
         # This is faster than starting from scratch, but may not find global optimum
         if n == 1:
-            initial_trees = initialize_greedy(n, scale_factor, seed=seed)
+            initial_trees = initialize_greedy(n, seed=seed)
         else:
             # Start with previous solution + one new tree at origin
             prev_trees = configurations[n-1][0]
@@ -403,7 +313,7 @@ def optimize_all_configurations(
         configurations[n] = (best_trees, best_energy)
 
         if n % visualize_every == 0 or n <= 5:
-            plot_configuration(best_trees, best_energy,
+            plot_configuration(best_trees, side_length=best_energy,
                              title=f"Optimized Configuration - {n} Trees")
 
     return configurations
@@ -448,7 +358,7 @@ def configurations_to_submission(configurations):
 # %%
 # Example: Optimize a small subset for testing
 test_configurations = optimize_all_configurations(
-    max_trees=10,
+    max_trees=2,
     sa_params={
         'initial_temp': 1.0,
         'final_temp': 0.01,

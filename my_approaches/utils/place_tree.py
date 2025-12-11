@@ -9,7 +9,7 @@ from shapely.strtree import STRtree
 from .tree import ChristmasTree
 
 
-def initialize_greedy(num_trees, scale_factor, seed=None):
+def initialize_greedy(num_trees, seed=None):
     """
     Create an initial configuration using a simple greedy placement strategy.
 
@@ -65,8 +65,8 @@ def initialize_greedy(num_trees, scale_factor, seed=None):
                 # Create a test polygon at this position
                 candidate_poly = affinity.translate(
                     tree.polygon,
-                    xoff=float(px * scale_factor),
-                    yoff=float(py * scale_factor))
+                    xoff=float(px * tree._scale_factor),
+                    yoff=float(py * tree._scale_factor))
 
                 # KEY: tree_index.query() returns INDICES of polygons whose bounding boxes
                 # overlap with candidate_poly. This is MUCH faster than checking all trees!
@@ -96,8 +96,8 @@ def initialize_greedy(num_trees, scale_factor, seed=None):
         tree.center_y = py
         tree.polygon = affinity.translate(
             tree.polygon,
-            xoff=float(px * scale_factor),
-            yoff=float(py * scale_factor))
+            xoff=float(px * tree._scale_factor),
+            yoff=float(py * tree._scale_factor))
 
         placed_trees.append(tree)
 
