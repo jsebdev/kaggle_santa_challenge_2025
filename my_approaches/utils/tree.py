@@ -65,34 +65,60 @@ class ChristmasTree:
         trunk_bottom_y = -trunk_h
 
         # Build polygon in scaled space for Shapely precision
-        initial_polygon = Polygon(
-            [
-                # Start at Tip
-                (Decimal('0.0') * self._scale_factor, tip_y * self._scale_factor),
-                # Right side - Top Tier
-                (top_w / Decimal('2') * self._scale_factor, tier_1_y * self._scale_factor),
-                (top_w / Decimal('4') * self._scale_factor, tier_1_y * self._scale_factor),
-                # Right side - Middle Tier
-                (mid_w / Decimal('2') * self._scale_factor, tier_2_y * self._scale_factor),
-                (mid_w / Decimal('4') * self._scale_factor, tier_2_y * self._scale_factor),
-                # Right side - Bottom Tier
-                (base_w / Decimal('2') * self._scale_factor, base_y * self._scale_factor),
-                # Right Trunk
-                (trunk_w / Decimal('2') * self._scale_factor, base_y * self._scale_factor),
-                (trunk_w / Decimal('2') * self._scale_factor, trunk_bottom_y * self._scale_factor),
-                # Left Trunk
-                (-(trunk_w / Decimal('2')) * self._scale_factor, trunk_bottom_y * self._scale_factor),
-                (-(trunk_w / Decimal('2')) * self._scale_factor, base_y * self._scale_factor),
-                # Left side - Bottom Tier
-                (-(base_w / Decimal('2')) * self._scale_factor, base_y * self._scale_factor),
-                # Left side - Middle Tier
-                (-(mid_w / Decimal('4')) * self._scale_factor, tier_2_y * self._scale_factor),
-                (-(mid_w / Decimal('2')) * self._scale_factor, tier_2_y * self._scale_factor),
-                # Left side - Top Tier
-                (-(top_w / Decimal('4')) * self._scale_factor, tier_1_y * self._scale_factor),
-                (-(top_w / Decimal('2')) * self._scale_factor, tier_1_y * self._scale_factor),
-            ]
-        )
+        tree_points = [
+            # Start at Tip
+            (Decimal("0.0") * self._scale_factor, tip_y * self._scale_factor),
+            # Right side - Top Tier
+            (top_w / Decimal("2") * self._scale_factor, tier_1_y * self._scale_factor),
+            (top_w / Decimal("4") * self._scale_factor, tier_1_y * self._scale_factor),
+            # Right side - Middle Tier
+            (mid_w / Decimal("2") * self._scale_factor, tier_2_y * self._scale_factor),
+            (mid_w / Decimal("4") * self._scale_factor, tier_2_y * self._scale_factor),
+            # Right side - Bottom Tier
+            (base_w / Decimal("2") * self._scale_factor, base_y * self._scale_factor),
+            # Right Trunk
+            (trunk_w / Decimal("2") * self._scale_factor, base_y * self._scale_factor),
+            (
+                trunk_w / Decimal("2") * self._scale_factor,
+                trunk_bottom_y * self._scale_factor,
+            ),
+            # Left Trunk
+            (
+                -(trunk_w / Decimal("2")) * self._scale_factor,
+                trunk_bottom_y * self._scale_factor,
+            ),
+            (
+                -(trunk_w / Decimal("2")) * self._scale_factor,
+                base_y * self._scale_factor,
+            ),
+            # Left side - Bottom Tier
+            (
+                -(base_w / Decimal("2")) * self._scale_factor,
+                base_y * self._scale_factor,
+            ),
+            # Left side - Middle Tier
+            (
+                -(mid_w / Decimal("4")) * self._scale_factor,
+                tier_2_y * self._scale_factor,
+            ),
+            (
+                -(mid_w / Decimal("2")) * self._scale_factor,
+                tier_2_y * self._scale_factor,
+            ),
+            # Left side - Top Tier
+            (
+                -(top_w / Decimal("4")) * self._scale_factor,
+                tier_1_y * self._scale_factor,
+            ),
+            (
+                -(top_w / Decimal("2")) * self._scale_factor,
+                tier_1_y * self._scale_factor,
+            ),
+        ]
+        # for point in tree_points:
+        #     unscaled_point = (point[0] / self._scale_factor, point[1] / self._scale_factor)
+        #     print(unscaled_point)
+        initial_polygon = Polygon(tree_points)
         rotated = affinity.rotate(initial_polygon, float(self.angle), origin=(0, 0))
         return affinity.translate(rotated,
                                   xoff=float(self.center_x * self._scale_factor),
