@@ -35,16 +35,16 @@ import random
 from decimal import Decimal, getcontext
 from copy import deepcopy
 
+import logging
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from shapely import affinity
 from shapely.geometry import Polygon
-from shapely.ops import unary_union
 from shapely.strtree import STRtree
 
-from utils.simulated_annealing.animate_snapshots import create_animation_from_snapshots, create_animation_from_snapshots2
+from utils.simulated_annealing.animate_snapshots import create_animation_from_snapshots, create_animation_from_snapshots
 from utils.tree import ChristmasTree
 from utils.collision import has_collision
 from utils.bounding_square import calculate_bounding_square
@@ -53,7 +53,8 @@ from utils.plot import HighlightTreeData, plot_configuration
 from utils.logging import configure_logging
 
 # %%
-configure_logging('1_simulated_annealing1.log')
+configure_logging('1_simulated_annealing.log')
+logger = logging.getLogger(__name__)
 getcontext().prec = 25
 pd.set_option('display.float_format', '{:.12f}'.format)
 
@@ -152,6 +153,19 @@ def perturb_swap(trees, idx1, idx2):
 
 
 # %%
+
+def caputure_animation_snapshots(snapshots, trees, energy, iteration, has_dollision, moved_tree_idxs):
+    snapshot = {
+        'trees': [deepcopy(t) for t in trees],
+        'energy': energy,
+        'iteration': iteration,
+        'selected_trees': {}
+    }
+    for idx in moved_tree_idxs:
+        snapshot['selected_trees'][idx] = HighlightTreeData(has_collision=has_dollision)
+    snapshots.append(snapshot)
+
+
 def simulated_annealing(
     initial_trees,
     initial_temp=1.0,
@@ -160,7 +174,7 @@ def simulated_annealing(
     iterations_per_temp=100,
     verbose=True,
     animate=False,
-    animation_interval=1
+    animation_interval=1,
 ):
     """
     Optimize tree configuration using simulated annealing.
@@ -194,39 +208,50 @@ def simulated_annealing(
 
     n_trees = len(current_trees)
 
+    snapshots.append({
+        'trees': [deepcopy(t) for t in current_trees],
+        'energy': current_energy,
+        'temperature': temperature,
+        'iteration': total_iterations,
+    })
+
     # Main optimization loop: continue until temperature is very low
     while temperature > final_temp:
         # At each temperature, try many random perturbations
         for _ in range(iterations_per_temp):
             total_iterations += 1
+            logger.debug('>>>>> 1_simulated_annealing.py:210 "total_iterations"')
+            logger.debug(total_iterations)
 
             # Randomly choose a type of perturbation
             move_type = random.choice(['translate', 'rotate', 'swap'])
 
             # Generate a new candidate configuration
             tree_idx = random.randint(0, n_trees - 1)
-            idx1, idx2 = random.sample(range(n_trees), 2)
+            moved_tree_idxs = [tree_idx]
             if move_type == 'translate':
                 new_trees = perturb_translation(current_trees, tree_idx, max_delta=0.15)
             elif move_type == 'rotate':
                 new_trees = perturb_rotation(current_trees, tree_idx, max_angle=20)
             else:  # swap
                 if n_trees < 2:
+                    logger.debug("skipping swap move - not enough trees")
                     continue
+                idx1, idx2 = random.sample(range(n_trees), 2)
+                moved_tree_idxs = [idx1, idx2]
                 new_trees = perturb_swap(current_trees, idx1, idx2)
 
             # Reject configurations with overlapping trees
-            if has_collision(new_trees):
-                snapshots.append({
-                    'trees': [deepcopy(t) for t in new_trees],
-                    'energy': best_energy,
-                    # 'temperature': temperature,
-                    'iteration': temp_step,
-                    "selected_trees": {tree_idx: HighlightTreeData(has_collision=True) if (move_type != 'swap') else {
-                        idx1: HighlightTreeData(has_collision=True),
-                        idx2: HighlightTreeData(has_collision=True),
-                    }}
-                })
+            collistion = has_collision(new_trees)
+            logger.debug('>>>>> 1_simulated_annealing.py:246 "moved_tree_idxs"')
+            logger.debug(moved_tree_idxs)
+            logger.debug('>>>>> 1_simulated_annealing.py:246 "move_type"')
+            logger.debug(move_type)
+            logger.debug('>>>>> 1_simulated_annealing.py:248 "collistion"')
+            logger.debug(collistion)
+            caputure_animation_snapshots(snapshots, new_trees, best_energy, iteration=total_iterations,
+                                         has_dollision=collistion, moved_tree_idxs=moved_tree_idxs)
+            if collistion:
                 continue
 
             # Calculate how much worse/better the new configuration is
@@ -256,14 +281,6 @@ def simulated_annealing(
             'acceptance_rate': accepted_moves / total_iterations
         })
 
-        # Capture snapshot for animation
-        if animate and temp_step % animation_interval == 0:
-            snapshots.append({
-                'trees': [deepcopy(t) for t in best_trees],
-                'energy': best_energy,
-                'temperature': temperature,
-                'iteration': temp_step
-            })
 
         if verbose and len(history) % 10 == 0:
             print(f"Temp: {temperature:.4f}, Best: {best_energy:.6f}, "
@@ -278,121 +295,17 @@ def simulated_annealing(
 
 
 # %%
-def optimize_all_configurations(
-    max_trees=200,
-    sa_params=None,
-    visualize_every=20,
-    seed=42
-):
-    """
-    Optimize configurations for all tree counts from 1 to max_trees.
-
-    Args:
-        max_trees: Maximum number of trees to optimize
-        sa_params: Dictionary of simulated annealing parameters
-        visualize_every: Visualize every N configurations
-        seed: Random seed for reproducibility
-
-    Returns:
-        dict: Mapping from tree count to (trees, side_length)
-    """
-    if sa_params is None:
-        sa_params = {
-            'initial_temp': 1.0,
-            'final_temp': 0.01,
-            'cooling_rate': 0.995,
-            'iterations_per_temp': 100
-        }
-
-    random.seed(seed)
-    configurations = {}
-
-    for n in range(1, max_trees + 1):
-        print(f"\n{'='*60}")
-        print(f"Optimizing configuration for {n} trees...")
-        print(f"{'='*60}")
-
-        # PROGRESSIVE BUILDING STRATEGY:
-        # Use the optimized (n-1)-tree configuration and add one more tree
-        # This is faster than starting from scratch, but may not find global optimum
-        if n == 1:
-            initial_trees = initialize_greedy(n, seed=seed)
-        else:
-            # Start with previous solution + one new tree at origin
-            prev_trees = configurations[n-1][0]
-            new_tree = ChristmasTree(
-                center_x='0',
-                center_y='0',
-                angle=str(random.uniform(0, 360))
-            )
-            initial_trees = [deepcopy(t) for t in prev_trees] + [new_tree]
-
-        initial_energy = calculate_energy(initial_trees)
-        print(f"Initial energy: {initial_energy:.6f}")
-
-        plot_configuration(initial_trees, title=f"Initial Configuration - {n} Trees")
-
-        best_trees, best_energy, history, _ = simulated_annealing(
-            initial_trees,
-            verbose=(n % 10 == 0),
-            animate=False,  # Don't capture snapshots in batch optimization
-            **sa_params
-        )
-
-        print(f"Final energy: {best_energy:.6f}")
-        print(f"Improvement: {float(initial_energy - best_energy):.6f} "
-              f"({100 * (1 - float(best_energy/initial_energy)):.2f}%)")
-
-        configurations[n] = (best_trees, best_energy)
-
-        if n % visualize_every == 0 or n <= 5:
-            plot_configuration(best_trees, side_length=best_energy,
-                             title=f"Optimized Configuration - {n} Trees")
-
-    return configurations
-
-
-# %%
-def configurations_to_submission(configurations):
-    """
-    Convert optimized configurations to Kaggle submission format.
-
-    Args:
-        configurations: Dict mapping tree count to (trees, side_length)
-
-    Returns:
-        pandas.DataFrame: Submission dataframe
-    """
-    index = [f'{n:03d}_{t}' for n in range(1, 201) for t in range(n)]
-    tree_data = []
-
-    for n in range(1, 201):
-        trees, _ = configurations[n]
-        for tree in trees:
-            tree_data.append([tree.center_x, tree.center_y, tree.angle])
-
-    cols = ['x', 'y', 'deg']
-    submission = pd.DataFrame(index=index, columns=cols, data=tree_data).rename_axis('id')
-
-    for col in cols:
-        submission[col] = submission[col].astype(float).round(decimals=6)
-
-    for col in submission.columns:
-        submission[col] = 's' + submission[col].astype('string')
-
-    return submission
-
-
-# %%
 n_trees = 2
-initial_trees = initialize_greedy(n_trees, seed=42)
+seed = 42
+random.seed(seed)
+initial_trees = initialize_greedy(n_trees)
 
 best_trees, best_energy, history, snapshots = simulated_annealing(
     initial_trees,
     initial_temp=1.0,
-    final_temp=0.01,
+    final_temp=0.98,
     cooling_rate=0.98,
-    iterations_per_temp=50,
+    iterations_per_temp=20,
     verbose=True,
     animate=True,
 )
@@ -400,10 +313,8 @@ best_trees, best_energy, history, snapshots = simulated_annealing(
 print(f"Captured {len(snapshots)} snapshots")
 print(f"Final energy: {best_energy:.6f}")
 
-# %%
-plot_configuration(best_trees, side_length=best_energy)
-
-# %%
-anim = create_animation_from_snapshots2(snapshots, fps=1)
-# what
+anim = create_animation_from_snapshots(snapshots, fps=2)
+from IPython.display import HTML
+plt.close()
+HTML(anim.to_jshtml())  # Display animation as HTML5 video
 

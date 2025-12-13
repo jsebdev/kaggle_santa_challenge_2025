@@ -5,11 +5,15 @@ from shapely.ops import unary_union
 
 from .bounding_square import calculate_bounding_square
 from dataclasses import dataclass
+import logging
 
 
 @dataclass
 class HighlightTreeData:
     has_collision: bool
+
+
+logger = logging.getLogger(__name__)
 
 
 def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None, highlighted_trees: dict[int, HighlightTreeData] | None = None) -> plt.Axes:
@@ -26,6 +30,8 @@ def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None, highlighted
 
     scale_factor = trees[0]._scale_factor
 
+    logger.debug('>>>>> plot.py:33 "highlighted_trees"')
+    logger.debug(highlighted_trees)
     for i, tree in enumerate(trees):
         x_scaled, y_scaled = tree.polygon.exterior.xy
         x = [Decimal(str(val)) / scale_factor for val in x_scaled]
