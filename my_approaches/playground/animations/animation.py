@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from functools import partial
+from IPython.display import HTML
 
 # %%
 fig, ax = plt.subplots()
@@ -22,7 +23,8 @@ def update(frame):
 
 ani = FuncAnimation(fig, update, frames=np.linspace(0, 2*np.pi, 128),
                     init_func=init, blit=True)
-plt.show()
+plt.close(fig)  # Prevent blank figure from showing
+HTML(ani.to_jshtml())  # Display animation as HTML5 video
 
 
 # %%
@@ -45,4 +47,26 @@ ani = FuncAnimation(
     frames=np.linspace(0, 2*np.pi, 128),
     init_func=init, blit=True)
 
-plt.show()
+plt.close(fig)  # Prevent blank figure from showing
+HTML(ani.to_jshtml())  # Display animation as HTML5 video
+
+# %%
+# Source - https://stackoverflow.com/a
+# Posted by ImportanceOfBeingErnest, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-12-12, License - CC BY-SA 3.0
+
+t = np.linspace(0,2*np.pi)
+x = np.sin(t)
+
+fig, ax = plt.subplots()
+ax.axis([0,2*np.pi,-1,1])
+l, = ax.plot([],[])
+
+def animate(i):
+    l.set_data(t[:i], x[:i])
+
+ani = FuncAnimation(fig, animate, frames=len(t))
+
+plt.close(fig)
+HTML(ani.to_jshtml())
+
