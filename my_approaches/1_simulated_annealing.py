@@ -224,22 +224,17 @@ def simulated_annealing(
             logger.debug(total_iterations)
 
             # Randomly choose a type of perturbation
-            move_type = random.choice(['translate', 'rotate', 'swap'])
+            move_type = random.choice(['translate', 'rotate'])
 
             # Generate a new candidate configuration
             tree_idx = random.randint(0, n_trees - 1)
             moved_tree_idxs = [tree_idx]
             if move_type == 'translate':
-                new_trees = perturb_translation(current_trees, tree_idx, max_delta=0.15)
-            elif move_type == 'rotate':
-                new_trees = perturb_rotation(current_trees, tree_idx, max_angle=20)
+                # new_trees = perturb_translation(current_trees, tree_idx, max_delta=0.1)
+                new_trees = perturb_translation(current_trees, tree_idx, max_delta=1)
+            # elif move_type == 'rotate':
             else:  # swap
-                if n_trees < 2:
-                    logger.debug("skipping swap move - not enough trees")
-                    continue
-                idx1, idx2 = random.sample(range(n_trees), 2)
-                moved_tree_idxs = [idx1, idx2]
-                new_trees = perturb_swap(current_trees, idx1, idx2)
+                new_trees = perturb_rotation(current_trees, tree_idx, max_angle=20)
 
             # Reject configurations with overlapping trees
             collistion = has_collision(new_trees)
@@ -249,8 +244,9 @@ def simulated_annealing(
             logger.debug(move_type)
             logger.debug('>>>>> 1_simulated_annealing.py:248 "collistion"')
             logger.debug(collistion)
-            caputure_animation_snapshots(snapshots, new_trees, best_energy, iteration=total_iterations,
-                                         has_dollision=collistion, moved_tree_idxs=moved_tree_idxs)
+            if animate and (temp_step % animation_interval == 0):
+                caputure_animation_snapshots(snapshots, new_trees, best_energy, iteration=total_iterations,
+                                             has_dollision=collistion, moved_tree_idxs=moved_tree_idxs)
             if collistion:
                 continue
 
@@ -303,18 +299,20 @@ initial_trees = initialize_greedy(n_trees)
 best_trees, best_energy, history, snapshots = simulated_annealing(
     initial_trees,
     initial_temp=1.0,
-    final_temp=0.98,
+    final_temp=0.9,
     cooling_rate=0.98,
-    iterations_per_temp=20,
+    iterations_per_temp=3,
     verbose=True,
     animate=True,
+    animation_interval=1,
 )
 
 print(f"Captured {len(snapshots)} snapshots")
 print(f"Final energy: {best_energy:.6f}")
 
-anim = create_animation_from_snapshots(snapshots, fps=2)
+anim = create_animation_from_snapshots(snapshots, fps=3)
 from IPython.display import HTML
 plt.close()
 HTML(anim.to_jshtml())  # Display animation as HTML5 video
+#
 

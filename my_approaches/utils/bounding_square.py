@@ -2,7 +2,7 @@ from shapely.ops import unary_union
 from decimal import Decimal
 
 
-def calculate_bounding_square(trees):
+def calculate_bounding_square(trees) -> Decimal:
     """
     Calculate the side length of the minimum bounding square for a set of trees.
 

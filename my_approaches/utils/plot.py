@@ -3,6 +3,8 @@ from decimal import Decimal
 from matplotlib.patches import Rectangle
 from shapely.ops import unary_union
 
+from utils.tree import ChristmasTree
+
 from .bounding_square import calculate_bounding_square
 from dataclasses import dataclass
 import logging
@@ -16,7 +18,13 @@ class HighlightTreeData:
 logger = logging.getLogger(__name__)
 
 
-def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None, highlighted_trees: dict[int, HighlightTreeData] | None = None) -> plt.Axes:
+def add_configuration_to_axis(
+    ax: plt.Axes,
+    trees: list[ChristmasTree],
+    side_length: Decimal | None = None,
+    highlighted_trees: dict[int, HighlightTreeData] | None = None,
+    title: str | None = None,
+) -> plt.Axes:
     num_trees = len(trees)
     colors = plt.cm.viridis([i / max(num_trees, 1) for i in range(num_trees)])
 
@@ -30,8 +38,6 @@ def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None, highlighted
 
     scale_factor = trees[0]._scale_factor
 
-    logger.debug('>>>>> plot.py:33 "highlighted_trees"')
-    logger.debug(highlighted_trees)
     for i, tree in enumerate(trees):
         x_scaled, y_scaled = tree.polygon.exterior.xy
         x = [Decimal(str(val)) / scale_factor for val in x_scaled]
@@ -70,16 +76,19 @@ def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None, highlighted
     ax.add_patch(bounding_square)
 
     padding = 0.5
-    ax.set_xlim(float(square_x - Decimal(str(padding))),
-                float(square_x + side_length + Decimal(str(padding))))
-    ax.set_ylim(float(square_y - Decimal(str(padding))),
-                float(square_y + side_length + Decimal(str(padding))))
+    ax.set_xlim(float(minx - Decimal(str(padding))),
+                float(maxx + Decimal(str(padding))))
+    ax.set_ylim(float(miny - Decimal(str(padding))),
+                float(maxy + Decimal(str(padding))))
     ax.set_aspect('equal', adjustable='box')
     ax.grid(True, alpha=0.3)
+    if not title:
+        title = "Tree Configuration"
+    ax.set_title(f'{title}\n{len(trees)} Trees: Side = {side_length:.6f}')
     return ax
 
 
-def plot_configuration(trees, side_length=None, title="Tree Configuration", show=True) -> plt.Axes:
+def plot_configuration(trees, side_length=None, title=None, show=True) -> plt.Axes:
     """
     Visualize a tree configuration with its bounding square.
 
@@ -90,11 +99,7 @@ def plot_configuration(trees, side_length=None, title="Tree Configuration", show
         show: Whether to call plt.show() immediately (default True)
     """
     _, ax = plt.subplots(figsize=(8, 8))
-    # ax = add_configuration_to_axis(ax, trees, side_length, highlighted_trees={
-    #     0: HighlightTreeData(has_collision=False),
-    # })
-    ax = add_configuration_to_axis(ax, trees, side_length, highlighted_trees=None)
-    plt.title(f'{title}\n{len(trees)} Trees: Side = {side_length:.6f}')
+    ax = add_configuration_to_axis(ax, trees, side_length, highlighted_trees=None, title=title)
     plt.tight_layout()
     if show:
         plt.show()

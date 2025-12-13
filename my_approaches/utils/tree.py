@@ -26,9 +26,14 @@ class ChristmasTree:
     # Internal scaling factor to maintain precision in Shapely operations.
     # Matches santa-2025-metric.py (1e18) to ensure consistency with official scoring.
     # This is private - utility functions can access it, but approach code should not.
-    _scale_factor = Decimal('1e18')
+    _scale_factor: Decimal = Decimal('1e18')
 
-    def __init__(self, center_x='0', center_y='0', angle='0'):
+    def __init__(
+        self,
+        center_x: str | float = "0",
+        center_y: str | float = "0",
+        angle: str | float = "0",
+    ):
         """Initializes the Christmas tree with a specific position and rotation.
 
         Args:
