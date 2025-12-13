@@ -25,7 +25,9 @@
 # %autoreload 2
 
 # %%
+%matplotlib ipympl
 import sys
+
 
 sys.path.append('.')
 
@@ -44,6 +46,8 @@ from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
 
+
+from utils.simulated_annealing.animate_snapshots import create_animation_from_snapshots, create_animation_from_snapshots2
 from utils.tree import ChristmasTree
 from utils.collision import has_collision
 from utils.bounding_square import calculate_bounding_square
@@ -239,7 +243,7 @@ def simulated_annealing(
         history.append({
             'temperature': temperature,
             'current_energy': float(current_energy),
-            'best_energy': float(best_energy),
+            'best_energy': best_energy,
             'acceptance_rate': accepted_moves / total_iterations
         })
 
@@ -247,7 +251,7 @@ def simulated_annealing(
         if animate and temp_step % animation_interval == 0:
             snapshots.append({
                 'trees': [deepcopy(t) for t in best_trees],
-                'energy': float(best_energy),
+                'energy': best_energy,
                 'temperature': temperature,
                 'iteration': temp_step
             })
@@ -262,177 +266,6 @@ def simulated_annealing(
         temp_step += 1
 
     return best_trees, best_energy, history, snapshots
-
-
-# %%
-def create_animation_from_snapshots(snapshots, save_path=None, fps=10):
-    """
-    Create an animation from captured snapshots using matplotlib.animation.
-    This creates a smooth animation that can be displayed in Jupyter or saved as MP4/GIF.
-
-    Args:
-        snapshots: List of snapshot dictionaries from simulated_annealing
-        save_path: Optional path to save animation (e.g., 'optimization.mp4' or 'optimization.gif')
-        fps: Frames per second for the animation
-
-    Returns:
-        matplotlib.animation.FuncAnimation object
-    """
-    from matplotlib.animation import FuncAnimation
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
-
-    # Extract data for plotting
-    iterations = [s['iteration'] for s in snapshots]
-    energies = [s['energy'] for s in snapshots]
-    temperatures = [s['temperature'] for s in snapshots]
-
-    def update(frame):
-        snapshot = snapshots[frame]
-        trees = snapshot['trees']
-        energy = snapshot['energy']
-        temp = snapshot['temperature']
-        iteration = snapshot['iteration']
-
-        # Clear axes
-        ax1.clear()
-        ax2.clear()
-
-        # Plot tree configuration
-        for tree in trees:
-            poly = tree.polygon
-            x, y = poly.exterior.xy
-            ax1.fill(x, y, alpha=0.5, fc='green', ec='darkgreen', linewidth=1.5)
-
-        side = energy
-        ax1.add_patch(Rectangle((-side/2, -side/2), side, side,
-                                fill=False, edgecolor='red', linewidth=2, linestyle='--'))
-
-        ax1.set_xlim(-side/2 - 1, side/2 + 1)
-        ax1.set_ylim(-side/2 - 1, side/2 + 1)
-        ax1.set_aspect('equal')
-        ax1.grid(True, alpha=0.3)
-        ax1.set_title(f'Configuration - {len(trees)} Trees\nEnergy: {energy:.6f}', fontsize=12)
-
-        # Plot energy progress
-        current_iterations = iterations[:frame+1]
-        current_energies = energies[:frame+1]
-
-        ax2.plot(current_iterations, current_energies, color='green', linewidth=2)
-        ax2.scatter([iteration], [energy], color='red', s=100, zorder=5)
-        ax2.set_xlabel('Temperature Step')
-        ax2.set_ylabel('Energy (Side Length)')
-        ax2.set_title(f'Optimization Progress\nIteration: {iteration}, Temp: {temp:.4f}')
-        ax2.grid(True, alpha=0.3)
-
-        # Set consistent y-axis limits
-        ax2.set_ylim(min(energies) * 0.95, max(energies) * 1.05)
-
-        plt.tight_layout()
-
-    anim = FuncAnimation(fig, update, frames=len(snapshots), interval=1000/fps, repeat=True)
-
-    if save_path:
-        print(f"Saving animation to {save_path}...")
-        if save_path.endswith('.gif'):
-            anim.save(save_path, writer='pillow', fps=fps)
-        elif save_path.endswith('.mp4'):
-            anim.save(save_path, writer='ffmpeg', fps=fps)
-        print(f"Animation saved!")
-
-    return anim
-
-
-# %%
-def plot_optimization_summary(history, snapshots=None):
-    """
-    Create a comprehensive visualization of the optimization process.
-
-    Args:
-        history: History dictionary from simulated_annealing
-        snapshots: Optional snapshots for showing configuration evolution
-    """
-    if snapshots and len(snapshots) > 0:
-        # Create multi-panel figure
-        fig = plt.figure(figsize=(18, 10))
-        gs = fig.add_gridspec(2, 4, hspace=0.3, wspace=0.3)
-
-        # Energy over time
-        ax1 = fig.add_subplot(gs[0, :2])
-        iterations = list(range(len(history)))
-        best_energies = [h['best_energy'] for h in history]
-        current_energies = [h['current_energy'] for h in history]
-
-        ax1.plot(iterations, best_energies, label='Best Energy', color='green', linewidth=2)
-        ax1.plot(iterations, current_energies, label='Current Energy', color='blue', alpha=0.5)
-        ax1.set_xlabel('Temperature Step')
-        ax1.set_ylabel('Energy')
-        ax1.set_title('Energy vs Iteration')
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
-
-        # Temperature decay
-        ax2 = fig.add_subplot(gs[0, 2:])
-        temperatures = [h['temperature'] for h in history]
-        ax2.semilogy(iterations, temperatures, color='red', linewidth=2)
-        ax2.set_xlabel('Temperature Step')
-        ax2.set_ylabel('Temperature (log scale)')
-        ax2.set_title('Temperature Decay')
-        ax2.grid(True, alpha=0.3)
-
-        # Show configurations at different stages
-        n_snapshots_to_show = min(4, len(snapshots))
-        snapshot_indices = [int(i * (len(snapshots)-1) / (n_snapshots_to_show-1))
-                           for i in range(n_snapshots_to_show)]
-
-        for i, snap_idx in enumerate(snapshot_indices):
-            ax = fig.add_subplot(gs[1, i])
-            snapshot = snapshots[snap_idx]
-            trees = snapshot['trees']
-            energy = snapshot['energy']
-
-            for tree in trees:
-                poly = tree.polygon
-                x, y = poly.exterior.xy
-                ax.fill(x, y, alpha=0.5, fc='green', ec='darkgreen', linewidth=1)
-
-            side = energy
-            ax.add_patch(Rectangle((-side/2, -side/2), side, side,
-                                  fill=False, edgecolor='red', linewidth=1.5, linestyle='--'))
-
-            ax.set_xlim(-side/2 - 0.5, side/2 + 0.5)
-            ax.set_ylim(-side/2 - 0.5, side/2 + 0.5)
-            ax.set_aspect('equal')
-            ax.set_title(f'Step {snapshot["iteration"]}\nE={energy:.4f}', fontsize=10)
-            ax.grid(True, alpha=0.2)
-
-        plt.suptitle('Optimization Summary', fontsize=16, fontweight='bold')
-        plt.show()
-    else:
-        # Simple plot without snapshots
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
-
-        iterations = list(range(len(history)))
-        best_energies = [h['best_energy'] for h in history]
-        current_energies = [h['current_energy'] for h in history]
-
-        ax1.plot(iterations, best_energies, label='Best Energy', color='green', linewidth=2)
-        ax1.plot(iterations, current_energies, label='Current Energy', color='blue', alpha=0.5)
-        ax1.set_xlabel('Temperature Step')
-        ax1.set_ylabel('Energy')
-        ax1.set_title('Energy vs Iteration')
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
-
-        temperatures = [h['temperature'] for h in history]
-        ax2.semilogy(iterations, temperatures, color='red', linewidth=2)
-        ax2.set_xlabel('Temperature Step')
-        ax2.set_ylabel('Temperature (log scale)')
-        ax2.set_title('Temperature Decay')
-        ax2.grid(True, alpha=0.3)
-
-        plt.tight_layout()
-        plt.show()
 
 
 # %%
@@ -487,7 +320,8 @@ def optimize_all_configurations(
 
         initial_energy = calculate_energy(initial_trees)
         print(f"Initial energy: {initial_energy:.6f}")
-        # plot_configuration(initial_trees, title=f"Initial Configuration - {n} Trees")
+
+        plot_configuration(initial_trees, title=f"Initial Configuration - {n} Trees")
 
         best_trees, best_energy, history, _ = simulated_annealing(
             initial_trees,
@@ -540,43 +374,8 @@ def configurations_to_submission(configurations):
     return submission
 
 
-# %% [markdown]
-# ## Run Optimization
-#
-# This cell runs the full optimization. Adjust parameters as needed.
-
 # %%
-# Example: Optimize a small subset for testing
-test_configurations = optimize_all_configurations(
-    max_trees=1,
-    sa_params={
-        'initial_temp': 1.0,
-        'final_temp': 0.01,
-        'cooling_rate': 0.98,
-        'iterations_per_temp': 50
-    },
-    visualize_every=5,
-    seed=42
-)
-
-# %%
-# Calculate total score
-total_score = sum(float(side**2) / n for n, (_, side) in test_configurations.items())
-print(f"\nTotal score for {len(test_configurations)} configurations: {total_score:.6f}")
-
-
-# %% [markdown]
-# ## Animation Examples
-#
-# This section shows three different ways to animate the optimization process:
-# 1. **Live animation** - Real-time updates in Jupyter (simplest, best for quick feedback)
-# 2. **Snapshot-based animation** - Create smooth animations from captured states (best for presentations)
-# 3. **Summary visualization** - Static overview of the entire optimization process
-
-# %%
-# Example 2: Snapshot-based Animation
-# First, run optimization with snapshot capture
-n_trees = 5
+n_trees = 2
 initial_trees = initialize_greedy(n_trees, seed=42)
 
 best_trees, best_energy, history, snapshots = simulated_annealing(
@@ -587,51 +386,18 @@ best_trees, best_energy, history, snapshots = simulated_annealing(
     iterations_per_temp=50,
     verbose=True,
     animate=True,
-    animation_interval=2  # Capture every 2 temperature steps
 )
 
 print(f"Captured {len(snapshots)} snapshots")
 print(f"Final energy: {best_energy:.6f}")
 
+plot_configuration(best_trees, side_length=best_energy)
+
+# %%
+plot_configuration(snapshots[0]['trees'], side_length=snapshots[0]['energy'])
+
 # %%
 # Create and display the animation
 # Note: In Jupyter, this will display as an interactive animation
-anim = create_animation_from_snapshots(snapshots, fps=5)
-
-# To save the animation (uncomment one of these):
-# anim = create_animation_from_snapshots(snapshots, save_path='optimization.gif', fps=5)
-# anim = create_animation_from_snapshots(snapshots, save_path='optimization.mp4', fps=10)
-
-# Display the animation in Jupyter
-from IPython.display import HTML
-HTML(anim.to_jshtml())
-
-# %%
-# Example 3: Optimization Summary
-# Create a comprehensive static visualization
-plot_optimization_summary(history, snapshots)
-
-# %% [markdown]
-# ## Full Run (Uncomment to execute)
-#
-# This will take a long time to complete. Consider running overnight or
-# adjusting parameters for faster (but potentially lower quality) results.
-
-# %%
-# full_configurations = optimize_all_configurations(
-#     max_trees=200,
-#     sa_params={
-#         'initial_temp': 2.0,
-#         'final_temp': 0.001,
-#         'cooling_rate': 0.997,
-#         'iterations_per_temp': 200
-#     },
-#     visualize_every=20,
-#     seed=42
-# )
-#
-# submission = configurations_to_submission(full_configurations)
-# submission.to_csv('submission_simulated_annealing.csv')
-# print("\nSubmission saved to submission_simulated_annealing.csv")
-
-# %%
+anim = create_animation_from_snapshots2(snapshots, fps=5)
+# anim = create_animation_from_snapshots(snapshots, fps=5)

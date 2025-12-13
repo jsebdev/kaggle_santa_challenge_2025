@@ -6,22 +6,12 @@ from shapely.ops import unary_union
 from .bounding_square import calculate_bounding_square
 
 
-def plot_configuration(trees, side_length=None, title="Tree Configuration", show=True) -> plt.Axes:
-    """
-    Visualize a tree configuration with its bounding square.
-
-    Args:
-        trees: List of ChristmasTree objects
-        side_length: Side length of bounding square (optional, will be calculated if not provided)
-        title: Plot title
-        show: Whether to call plt.show() immediately (default True)
-    """
-    _, ax = plt.subplots(figsize=(8, 8))
+def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None) -> plt.Axes:
     num_trees = len(trees)
     colors = plt.cm.viridis([i / max(num_trees, 1) for i in range(num_trees)])
 
     if not trees:
-        return
+        return ax
 
     all_polygons = [t.polygon for t in trees]
     # unary_union merges all tree polygons into one big shape
@@ -69,7 +59,22 @@ def plot_configuration(trees, side_length=None, title="Tree Configuration", show
                 float(square_y + side_length + Decimal(str(padding))))
     ax.set_aspect('equal', adjustable='box')
     ax.grid(True, alpha=0.3)
-    plt.title(f'{title}\n{num_trees} Trees: Side = {side_length:.6f}')
+    return ax
+
+
+def plot_configuration(trees, side_length=None, title="Tree Configuration", show=True) -> plt.Axes:
+    """
+    Visualize a tree configuration with its bounding square.
+
+    Args:
+        trees: List of ChristmasTree objects
+        side_length: Side length of bounding square (optional, will be calculated if not provided)
+        title: Plot title
+        show: Whether to call plt.show() immediately (default True)
+    """
+    _, ax = plt.subplots(figsize=(8, 8))
+    ax = add_configuration_to_axis(ax, trees, side_length)
+    plt.title(f'{title}\n{len(trees)} Trees: Side = {side_length:.6f}')
     plt.tight_layout()
     if show:
         plt.show()
