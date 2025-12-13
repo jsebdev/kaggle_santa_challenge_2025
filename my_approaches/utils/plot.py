@@ -4,9 +4,15 @@ from matplotlib.patches import Rectangle
 from shapely.ops import unary_union
 
 from .bounding_square import calculate_bounding_square
+from dataclasses import dataclass
 
 
-def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None, highlighted_trees=None) -> plt.Axes:
+@dataclass
+class HighlightTreeData:
+    has_collision: bool
+
+
+def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None, highlighted_trees: dict[int, HighlightTreeData] | None = None) -> plt.Axes:
     num_trees = len(trees)
     colors = plt.cm.viridis([i / max(num_trees, 1) for i in range(num_trees)])
 
@@ -26,6 +32,8 @@ def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None, highlighted
         y = [Decimal(str(val)) / scale_factor for val in y_scaled]
         if highlighted_trees and i in highlighted_trees:
             ax.plot(x, y, color='red', linewidth=3)
+            if highlighted_trees[i].has_collision:
+                ax.fill(x, y, alpha=0.7, color='red')
         else:
             ax.plot(x, y, color=colors[i], linewidth=1)
             ax.fill(x, y, alpha=0.5, color=colors[i])
@@ -76,7 +84,10 @@ def plot_configuration(trees, side_length=None, title="Tree Configuration", show
         show: Whether to call plt.show() immediately (default True)
     """
     _, ax = plt.subplots(figsize=(8, 8))
-    ax = add_configuration_to_axis(ax, trees, side_length, highlighted_trees=[0])
+    # ax = add_configuration_to_axis(ax, trees, side_length, highlighted_trees={
+    #     0: HighlightTreeData(has_collision=False),
+    # })
+    ax = add_configuration_to_axis(ax, trees, side_length, highlighted_trees=None)
     plt.title(f'{title}\n{len(trees)} Trees: Side = {side_length:.6f}')
     plt.tight_layout()
     if show:

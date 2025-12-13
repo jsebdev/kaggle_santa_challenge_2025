@@ -27,9 +27,6 @@
 # %%
 %matplotlib ipympl
 import sys
-
-
-
 sys.path.append('.')
 
 # %%
@@ -47,14 +44,16 @@ from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
 
-
 from utils.simulated_annealing.animate_snapshots import create_animation_from_snapshots, create_animation_from_snapshots2
 from utils.tree import ChristmasTree
 from utils.collision import has_collision
 from utils.bounding_square import calculate_bounding_square
 from utils.place_tree import initialize_greedy
-from utils.plot import plot_configuration
+from utils.plot import HighlightTreeData, plot_configuration
+from utils.logging import configure_logging
 
+# %%
+configure_logging('1_simulated_annealing1.log')
 getcontext().prec = 25
 pd.set_option('display.float_format', '{:.12f}'.format)
 
@@ -205,20 +204,29 @@ def simulated_annealing(
             move_type = random.choice(['translate', 'rotate', 'swap'])
 
             # Generate a new candidate configuration
+            tree_idx = random.randint(0, n_trees - 1)
+            idx1, idx2 = random.sample(range(n_trees), 2)
             if move_type == 'translate':
-                tree_idx = random.randint(0, n_trees - 1)
                 new_trees = perturb_translation(current_trees, tree_idx, max_delta=0.15)
             elif move_type == 'rotate':
-                tree_idx = random.randint(0, n_trees - 1)
                 new_trees = perturb_rotation(current_trees, tree_idx, max_angle=20)
             else:  # swap
                 if n_trees < 2:
                     continue
-                idx1, idx2 = random.sample(range(n_trees), 2)
                 new_trees = perturb_swap(current_trees, idx1, idx2)
 
             # Reject configurations with overlapping trees
             if has_collision(new_trees):
+                snapshots.append({
+                    'trees': [deepcopy(t) for t in new_trees],
+                    'energy': best_energy,
+                    # 'temperature': temperature,
+                    'iteration': temp_step,
+                    "selected_trees": {tree_idx: HighlightTreeData(has_collision=True) if (move_type != 'swap') else {
+                        idx1: HighlightTreeData(has_collision=True),
+                        idx2: HighlightTreeData(has_collision=True),
+                    }}
+                })
                 continue
 
             # Calculate how much worse/better the new configuration is
