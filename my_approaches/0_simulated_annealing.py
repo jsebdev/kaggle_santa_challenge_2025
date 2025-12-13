@@ -25,6 +25,7 @@
 # %autoreload 2
 
 # %%
+%matplotlib ipympl
 import sys
 
 sys.path.append('.')
@@ -34,6 +35,7 @@ import math
 import random
 from decimal import Decimal, getcontext
 from copy import deepcopy
+from matplotlib.animation import FuncAnimation
 
 import numpy as np
 import pandas as pd
@@ -278,7 +280,6 @@ def create_animation_from_snapshots(snapshots, save_path=None, fps=10):
     Returns:
         matplotlib.animation.FuncAnimation object
     """
-    from matplotlib.animation import FuncAnimation
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
 
@@ -603,8 +604,8 @@ anim = create_animation_from_snapshots(snapshots, fps=5)
 # anim = create_animation_from_snapshots(snapshots, save_path='optimization.mp4', fps=10)
 
 # Display the animation in Jupyter
-from IPython.display import HTML
-HTML(anim.to_jshtml())
+# from IPython.display import HTML
+# HTML(anim.to_jshtml())
 
 # %%
 # Example 3: Optimization Summary
