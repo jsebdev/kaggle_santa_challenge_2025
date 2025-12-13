@@ -1,6 +1,7 @@
 from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
+import numpy as np
 from utils.plot import add_configuration_to_axis
 
 
@@ -59,6 +60,7 @@ def create_animation_from_snapshots(snapshots, save_path=None, fps=10):
     return anim
 
 def create_animation_from_snapshots2(snapshots, save_path=None, fps=10):
+
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
 
     # Extract data for plotting
@@ -90,10 +92,21 @@ def create_animation_from_snapshots2(snapshots, save_path=None, fps=10):
         ax2.grid(True, alpha=0.3)
 
         # Set consistent y-axis limits
-        ax2.set_ylim(min(energies) * 0.95, max(energies) * 1.05)
+        # ax2.set_ylim(min(energies) * 0.95, max(energies) * 1.05)
 
-        plt.tight_layout()
+        # plt.tight_layout()
 
-    anim = FuncAnimation(fig, update, frames=len(snapshots), interval=1000/fps, repeat=True)
+
+    # def update(frame):
+        # x = np.array([5,7,8,7,2,17,2,9,4,11,12,9,6])
+        # y = np.array([99,86,87,88,111,86,103,87,94,78,77,85,86])
+        # xp = x[:frame]
+        # yp = y[:frame]
+        # ax1.clear()
+        # ax1.scatter(xp, yp)
+        # return ax1
+
+    # anim = FuncAnimation(fig, update, frames=len(snapshots), interval=1000/fps, repeat=True)
+    anim = FuncAnimation(fig, update, frames=5, interval=1000/fps, repeat=True)
 
     return anim

@@ -29,6 +29,7 @@
 import sys
 
 
+
 sys.path.append('.')
 
 # %%
@@ -391,13 +392,10 @@ best_trees, best_energy, history, snapshots = simulated_annealing(
 print(f"Captured {len(snapshots)} snapshots")
 print(f"Final energy: {best_energy:.6f}")
 
+# %%
 plot_configuration(best_trees, side_length=best_energy)
 
 # %%
-plot_configuration(snapshots[0]['trees'], side_length=snapshots[0]['energy'])
+anim = create_animation_from_snapshots2(snapshots, fps=1)
+# what
 
-# %%
-# Create and display the animation
-# Note: In Jupyter, this will display as an interactive animation
-anim = create_animation_from_snapshots2(snapshots, fps=5)
-# anim = create_animation_from_snapshots(snapshots, fps=5)

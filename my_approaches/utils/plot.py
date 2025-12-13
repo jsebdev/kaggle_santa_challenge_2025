@@ -6,7 +6,7 @@ from shapely.ops import unary_union
 from .bounding_square import calculate_bounding_square
 
 
-def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None) -> plt.Axes:
+def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None, highlighted_trees=None) -> plt.Axes:
     num_trees = len(trees)
     colors = plt.cm.viridis([i / max(num_trees, 1) for i in range(num_trees)])
 
@@ -24,8 +24,11 @@ def add_configuration_to_axis(ax: plt.Axes, trees, side_length=None) -> plt.Axes
         x_scaled, y_scaled = tree.polygon.exterior.xy
         x = [Decimal(str(val)) / scale_factor for val in x_scaled]
         y = [Decimal(str(val)) / scale_factor for val in y_scaled]
-        ax.plot(x, y, color=colors[i], linewidth=1)
-        ax.fill(x, y, alpha=0.5, color=colors[i])
+        if highlighted_trees and i in highlighted_trees:
+            ax.plot(x, y, color='red', linewidth=3)
+        else:
+            ax.plot(x, y, color=colors[i], linewidth=1)
+            ax.fill(x, y, alpha=0.5, color=colors[i])
 
     minx = Decimal(str(bounds[0])) / scale_factor
     miny = Decimal(str(bounds[1])) / scale_factor
@@ -73,7 +76,7 @@ def plot_configuration(trees, side_length=None, title="Tree Configuration", show
         show: Whether to call plt.show() immediately (default True)
     """
     _, ax = plt.subplots(figsize=(8, 8))
-    ax = add_configuration_to_axis(ax, trees, side_length)
+    ax = add_configuration_to_axis(ax, trees, side_length, highlighted_trees=[0])
     plt.title(f'{title}\n{len(trees)} Trees: Side = {side_length:.6f}')
     plt.tight_layout()
     if show:
