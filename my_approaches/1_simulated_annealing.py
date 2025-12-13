@@ -220,8 +220,8 @@ def simulated_annealing(
         # At each temperature, try many random perturbations
         for _ in range(iterations_per_temp):
             total_iterations += 1
-            logger.debug('>>>>> 1_simulated_annealing.py:210 "total_iterations"')
-            logger.debug(total_iterations)
+            # logger.debug('>>>>> 1_simulated_annealing.py:210 "total_iterations"')
+            # logger.debug(total_iterations)
 
             # Randomly choose a type of perturbation
             move_type = random.choice(['translate', 'rotate'])
@@ -230,21 +230,21 @@ def simulated_annealing(
             tree_idx = random.randint(0, n_trees - 1)
             moved_tree_idxs = [tree_idx]
             if move_type == 'translate':
-                # new_trees = perturb_translation(current_trees, tree_idx, max_delta=0.1)
-                new_trees = perturb_translation(current_trees, tree_idx, max_delta=1)
+                new_trees = perturb_translation(current_trees, tree_idx, max_delta=0.1)
+                # new_trees = perturb_translation(current_trees, tree_idx, max_delta=1)
             # elif move_type == 'rotate':
             else:  # swap
                 new_trees = perturb_rotation(current_trees, tree_idx, max_angle=20)
 
             # Reject configurations with overlapping trees
             collistion = has_collision(new_trees)
-            logger.debug('>>>>> 1_simulated_annealing.py:246 "moved_tree_idxs"')
-            logger.debug(moved_tree_idxs)
-            logger.debug('>>>>> 1_simulated_annealing.py:246 "move_type"')
-            logger.debug(move_type)
-            logger.debug('>>>>> 1_simulated_annealing.py:248 "collistion"')
-            logger.debug(collistion)
-            if animate and (temp_step % animation_interval == 0):
+            # logger.debug('>>>>> 1_simulated_annealing.py:246 "moved_tree_idxs"')
+            # logger.debug(moved_tree_idxs)
+            # logger.debug('>>>>> 1_simulated_annealing.py:246 "move_type"')
+            # logger.debug(move_type)
+            # logger.debug('>>>>> 1_simulated_annealing.py:248 "collistion"')
+            # logger.debug(collistion)
+            if animate and (total_iterations % animation_interval == 0):
                 caputure_animation_snapshots(snapshots, new_trees, best_energy, iteration=total_iterations,
                                              has_dollision=collistion, moved_tree_idxs=moved_tree_idxs)
             if collistion:
@@ -287,6 +287,12 @@ def simulated_annealing(
         temperature *= cooling_rate
         temp_step += 1
 
+    print("Simulated annealing complete.")
+    print("total iterations:", total_iterations)
+    print("total temperature steps:", temp_step)
+    print("accepted moves:", accepted_moves)
+    print("acceptance rate:", accepted_moves / total_iterations)
+
     return best_trees, best_energy, history, snapshots
 
 
@@ -301,18 +307,16 @@ best_trees, best_energy, history, snapshots = simulated_annealing(
     initial_temp=1.0,
     final_temp=0.9,
     cooling_rate=0.98,
-    iterations_per_temp=3,
+    iterations_per_temp=50,
     verbose=True,
     animate=True,
-    animation_interval=1,
+    animation_interval=5,
 )
 
 print(f"Captured {len(snapshots)} snapshots")
 print(f"Final energy: {best_energy:.6f}")
 
-anim = create_animation_from_snapshots(snapshots, fps=3)
+anim = create_animation_from_snapshots(snapshots, fps=20)
 from IPython.display import HTML
 plt.close()
 HTML(anim.to_jshtml())  # Display animation as HTML5 video
-#
-
