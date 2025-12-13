@@ -198,6 +198,7 @@ def simulated_annealing(
 
     best_trees = [deepcopy(t) for t in current_trees]
     best_energy = current_energy
+    best_iteration = 0
 
     temperature = initial_temp
     history = []
@@ -269,6 +270,7 @@ def simulated_annealing(
                 if current_energy < best_energy:
                     best_trees = [deepcopy(t) for t in current_trees]
                     best_energy = current_energy
+                    best_iteration = total_iterations
 
         history.append({
             'temperature': temperature,
@@ -293,28 +295,41 @@ def simulated_annealing(
     print("accepted moves:", accepted_moves)
     print("acceptance rate:", accepted_moves / total_iterations)
 
-    return best_trees, best_energy, history, snapshots
+    return {
+        'best_trees': best_trees,
+        'best_energy': best_energy,
+        'history': history,
+        'snapshots': snapshots,
+        'best_iteration': best_iteration,
+    }
 
 
 # %%
-n_trees = 2
+n_trees = 3
 seed = 42
 random.seed(seed)
 initial_trees = initialize_greedy(n_trees)
 
-best_trees, best_energy, history, snapshots = simulated_annealing(
+result = simulated_annealing(
     initial_trees,
     initial_temp=1.0,
-    final_temp=0.9,
+    final_temp=0.01,
     cooling_rate=0.98,
     iterations_per_temp=50,
     verbose=True,
     animate=True,
-    animation_interval=5,
+    animation_interval=30,
 )
+# best_trees, best_energy, history, snapshots
+best_trees = result['best_trees']
+best_energy = result['best_energy']
+snapshots = result['snapshots']
+best_iteration = result['best_iteration']
 
-print(f"Captured {len(snapshots)} snapshots")
-print(f"Final energy: {best_energy:.6f}")
+print(f"Best configuration found at iteration {best_iteration} with bounding square side length: {best_energy}")
+
+plot_configuration(best_trees, side_length=best_energy)
+
 
 anim = create_animation_from_snapshots(snapshots, fps=20)
 from IPython.display import HTML
