@@ -60,104 +60,38 @@ pd.set_option('display.float_format', '{:.12f}'.format)
 
 # %%
 def calculate_energy(trees):
-    """
-    Calculate the energy (objective function) for the current configuration.
-    Lower energy is better. In simulated annealing, "energy" is what we minimize.
-
-    Args:
-        trees: List of ChristmasTree objects
-
-    Returns:
-        Decimal: The bounding square side length (energy to minimize)
-    """
     return calculate_bounding_square(trees)
 
 
 # %%
 def perturb_translation(trees, tree_idx, max_delta=0.1):
-    """
-    Create a new configuration by translating a single tree.
-    This is one of three "move types" in our simulated annealing.
-
-    Args:
-        trees: Current list of ChristmasTree objects
-        tree_idx: Index of tree to perturb
-        max_delta: Maximum translation distance
-
-    Returns:
-        List of ChristmasTree objects (new configuration)
-    """
-    # Deep copy to avoid modifying original configuration
     new_trees = [deepcopy(t) for t in trees]
     tree = new_trees[tree_idx]
 
-    # Random translation in both x and y directions
     dx = random.uniform(-max_delta, max_delta)
     dy = random.uniform(-max_delta, max_delta)
 
-    # Move the tree using its clean method
     tree.move(dx, dy)
 
     return new_trees
 
 
 def perturb_rotation(trees, tree_idx, max_angle=15):
-    """
-    Create a new configuration by rotating a single tree.
-    Rotation can help trees fit together better in tight spaces.
-
-    Args:
-        trees: Current list of ChristmasTree objects
-        tree_idx: Index of tree to perturb
-        max_angle: Maximum rotation angle in degrees
-
-    Returns:
-        List of ChristmasTree objects (new configuration)
-    """
     new_trees = [deepcopy(t) for t in trees]
     tree = new_trees[tree_idx]
 
-    # Rotate by a random angle (positive or negative)
     delta_angle = random.uniform(-max_angle, max_angle)
 
-    # Rotate the tree using its clean method
     tree.rotate(delta_angle)
 
     return new_trees
 
-
-def perturb_swap(trees, idx1, idx2):
-    """
-    Create a new configuration by swapping positions of two trees.
-    This can make larger changes to the configuration than translation/rotation.
-
-    Args:
-        trees: Current list of ChristmasTree objects
-        idx1: Index of first tree
-        idx2: Index of second tree
-
-    Returns:
-        List of ChristmasTree objects (new configuration)
-    """
-    new_trees = [deepcopy(t) for t in trees]
-
-    # Save the positions of both trees
-    pos1 = (new_trees[idx1].center_x, new_trees[idx1].center_y)
-    pos2 = (new_trees[idx2].center_x, new_trees[idx2].center_y)
-
-    # Swap positions (keeping rotations)
-    new_trees[idx1].set_transform(pos2[0], pos2[1], new_trees[idx1].angle)
-    new_trees[idx2].set_transform(pos1[0], pos1[1], new_trees[idx2].angle)
-
-    return new_trees
-
-
 # %%
-
-def caputure_animation_snapshots(snapshots: list[Snapshot],
+def capture_animation_snapshots(snapshots: list[Snapshot],
                                  trees: list[ChristmasTree],
                                  energy,
                                  iteration,
+                                 temperature,
                                  has_dollision=False,
                                  moved_tree_idxs=None,
 ):
@@ -165,13 +99,17 @@ def caputure_animation_snapshots(snapshots: list[Snapshot],
         trees=[deepcopy(t) for t in trees],
         side_length=energy,
         text=f"Iteration: {iteration}\nBounding Square Side Length: {energy:.6f}",
+        metrics={
+            "temperature": temperature,
+            "side_length": energy,
+        }
     )
     if moved_tree_idxs is not None:
         for idx in moved_tree_idxs:
             snapshot.selected_trees[idx] = HighlightTreeData(has_collision=has_dollision)
     snapshots.append(snapshot)
 
-
+# %%
 def simulated_annealing(
     initial_trees,
     initial_temp=1.0,
@@ -216,7 +154,7 @@ def simulated_annealing(
     n_trees = len(current_trees)
 
     if animate:
-        caputure_animation_snapshots(snapshots, current_trees, current_energy, total_iterations)
+        capture_animation_snapshots(snapshots, current_trees, current_energy, total_iterations, temperature)
 
     # Main optimization loop: continue until temperature is very low
     while temperature > final_temp:
@@ -241,14 +179,8 @@ def simulated_annealing(
 
             # Reject configurations with overlapping trees
             collistion = has_collision(new_trees)
-            # logger.debug('>>>>> 1_simulated_annealing.py:246 "moved_tree_idxs"')
-            # logger.debug(moved_tree_idxs)
-            # logger.debug('>>>>> 1_simulated_annealing.py:246 "move_type"')
-            # logger.debug(move_type)
-            # logger.debug('>>>>> 1_simulated_annealing.py:248 "collistion"')
-            # logger.debug(collistion)
             if animate and (total_iterations % animation_interval == 0):
-                caputure_animation_snapshots(snapshots, new_trees, best_energy, total_iterations,
+                capture_animation_snapshots(snapshots, new_trees, best_energy, total_iterations, temperature,
                                              has_dollision=collistion, moved_tree_idxs=moved_tree_idxs)
             if collistion:
                 continue
@@ -257,12 +189,6 @@ def simulated_annealing(
             new_energy = calculate_energy(new_trees)
             delta_energy = float(new_energy - current_energy)
 
-            # SIMULATED ANNEALING ACCEPTANCE CRITERION:
-            # - Always accept improvements (delta_energy < 0)
-            # - Sometimes accept worse solutions with probability exp(-delta_energy / temperature)
-            #   * High temperature: accept many worse solutions (explore widely)
-            #   * Low temperature: rarely accept worse solutions (exploit good regions)
-            # This allows escaping local minima!
             if delta_energy < 0 or random.random() < math.exp(-delta_energy / temperature):
                 current_trees = new_trees
                 current_energy = new_energy

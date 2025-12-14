@@ -144,11 +144,8 @@ class ChristmasTree:
 
         self.center_x += dx
         self.center_y += dy
-        self.polygon = affinity.translate(
-            self.polygon,
-            xoff=float(dx * self._scale_factor),
-            yoff=float(dy * self._scale_factor)
-        )
+        # Rebuild polygon from scratch to avoid floating-point error accumulation
+        self.polygon = self._build_polygon()
 
     def rotate(self, angle_delta):
         """Rotate this tree by a delta angle.

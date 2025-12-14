@@ -10,13 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 def create_animation_from_snapshots(snapshots: list[Snapshot], fps=10):
-    fig, axis = plt.subplots(1, 1, figsize=(16, 7))
+    # fig, (axis0, axis1) = plt.subplots(2, 1, figsize=(16, 7))
+    fig, (axis0) = plt.subplots(1, 1, figsize=(16, 7))
 
     # Initialize with first snapshot to set up artists
     max_trees = max(len(s.trees) for s in snapshots)
     colors = get_colors(max_trees)
     artists = get_artists_for_configuration(
-        axis,
+        axis0,
         colors=colors,
     )
 
@@ -24,7 +25,7 @@ def create_animation_from_snapshots(snapshots: list[Snapshot], fps=10):
         snapshot = snapshots[frame]
         prev_snapshot = snapshots[frame - 1] if frame > 0 else None
         return update_artists_between_snapshots(
-            axis,
+            axis0,
             artists,
             snapshot,
             colors,

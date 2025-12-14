@@ -26,6 +26,8 @@ class Snapshot:
     side_length: Decimal
     selected_trees: dict[int, HighlightTreeData] = field(default_factory=dict)
     text: str = ""
+    title: str = ""
+    metrics: dict[str, float] = field(default_factory=dict)
 
 
 def get_artists_for_configuration(axis, colors):
@@ -179,11 +181,8 @@ def update_artists_between_snapshots(
 
     # Update text and title
     text.set_text(snapshot.text)
-    axis.set_title(
-        f"Tree Configuration\n{len(trees)} Trees: Side = {side_length:.6f}"
-    )
+    axis.set_title(snapshot.title)
     artists_to_update.append(text)
-    logger.debug("5")
 
     return artists_to_update
 
