@@ -1,4 +1,4 @@
-def update_artists_for_metrics(axis, artists, snapshots, frame):
+def update_artists_for_metrics(axis, artists, snapshots, frame, metrics_factor):
     line_artists, text = artists
     artists_to_update = []
 
@@ -11,7 +11,8 @@ def update_artists_for_metrics(axis, artists, snapshots, frame):
             if metric_name not in metric_data:
                 metric_data[metric_name] = {'x': [], 'y': []}
             metric_data[metric_name]['x'].append(i)
-            metric_data[metric_name]['y'].append(value)
+            metric_factor = metrics_factor.get(metric_name, 1.0)
+            metric_data[metric_name]['y'].append(value * metric_factor)
 
     # Update line artists
     for metric_name, data in metric_data.items():

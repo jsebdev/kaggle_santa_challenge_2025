@@ -11,9 +11,8 @@ from utils.color_map import get_colors_for_trees
 logger = logging.getLogger(__name__)
 
 
-def create_animation_from_snapshots(snapshots: list[Snapshot], fps=10):
-    fig, (axis0, axis1) = plt.subplots(2, 1, figsize=(16, 7))
-    # fig, (axis0) = plt.subplots(1, 1, figsize=(16, 7))
+def create_animation_from_snapshots(snapshots: list[Snapshot], metrics_factor, fps=10):
+    fig, (axis0, axis1) = plt.subplots(1, 2, figsize=(18, 9))
 
     # Initialize with first snapshot to set up artists
     max_trees = max(len(s.trees) for s in snapshots)
@@ -25,6 +24,7 @@ def create_animation_from_snapshots(snapshots: list[Snapshot], fps=10):
     metrics_artists = get_artists_for_metrics(
         axis1,
         snapshots[0].metrics,
+        metrics_factor,
     )
 
     def update(frame: int):
@@ -42,6 +42,7 @@ def create_animation_from_snapshots(snapshots: list[Snapshot], fps=10):
             metrics_artists,
             snapshots,
             frame,
+            metrics_factor,
         )
         return artists_to_update_in_trees + artists_to_update_in_metrics
 

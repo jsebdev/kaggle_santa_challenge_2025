@@ -1,6 +1,6 @@
 from utils.color_map import get_color_for_metrics
 
-def get_artists_for_metrics(axis, metrics):
+def get_artists_for_metrics(axis, metrics, metrics_factor=None):
     metric_names = sorted(metrics.keys())  # Sort for consistency
     # Get enough colors for all metrics
     colors = get_color_for_metrics(len(metric_names))
@@ -27,7 +27,8 @@ def get_artists_for_metrics(axis, metrics):
     # Set up axis
     axis.set_xlabel('Frame', fontsize=10)
     axis.set_ylabel('Value', fontsize=10)
-    axis.set_title('Metrics Over Time', fontsize=12)
+    metrics_factors_labels = '\n'.join(f"{k}: x{v}" for k, v in metrics_factor.items()) if metrics_factor else ""
+    axis.set_title(f'Metrics\n{metrics_factors_labels}', fontsize=12)
     axis.grid(True, alpha=0.3)
 
     return line_artists, text

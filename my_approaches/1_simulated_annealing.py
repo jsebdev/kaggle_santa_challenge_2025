@@ -255,12 +255,14 @@ snapshots = result['snapshots']
 best_iteration = result['best_iteration']
 
 print(f"Best configuration found at iteration {best_iteration} with bounding square side length: {best_energy}")
+# %%
+plot_configuration(best_trees, side_length=best_energy)
 
 # %%
-anim = create_animation_from_snapshots(snapshots, fps=10)
+anim = create_animation_from_snapshots(snapshots, fps=10, metrics_factor={
+    "side_length": 1.0,
+    "temperature": 1.0,
+})
 from IPython.display import HTML
 plt.close()
 HTML(anim.to_jshtml())  # Display animation as HTML5 video
-
-# %%
-plot_configuration(best_trees, side_length=best_energy)
