@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 class Snapshot:
     trees: list[ChristmasTree]
     side_length: Decimal
-    # selected_trees: dict[int, HighlightTreeData] = {}
     selected_trees: dict[int, HighlightTreeData] = field(default_factory=dict)
-
 
 
 def create_animation_from_snapshots(snapshots: list[Snapshot], fps=10):
@@ -75,38 +73,67 @@ def create_animation_from_snapshots(snapshots: list[Snapshot], fps=10):
         side_length = snapshot.side_length
         selected_trees = snapshot.selected_trees
 
+        # Get previous frame data for change detection
+        prev_snapshot = snapshots[frame - 1] if frame > 0 else None
+        prev_trees = prev_snapshot.trees if prev_snapshot else []
+        prev_selected_trees = prev_snapshot.selected_trees if prev_snapshot else {}
+        prev_side_length = prev_snapshot.side_length if prev_snapshot else None
+
         artists_to_return = []
 
+        def tree_changed(i, tree):
+            """Check if tree position or selection state changed."""
+            if frame == 0 or i >= len(prev_trees):
+                return True
+
+            prev_tree = prev_trees[i]
+            if (tree.center_x != prev_tree.center_x or
+                tree.center_y != prev_tree.center_y or
+                tree.angle != prev_tree.angle):
+                return True
+
+            is_selected = i in selected_trees
+            was_selected = i in prev_selected_trees
+            if is_selected != was_selected:
+                return True
+
+            if is_selected and was_selected:
+                if selected_trees[i].has_collision != prev_selected_trees[i].has_collision:
+                    return True
+
+            return False
+
         logger.debug("1")
-        # Update each tree
+        # Update each tree (only if it changed)
         for i, tree in enumerate(trees):
-            x_scaled, y_scaled = tree.polygon.exterior.xy
-            x = [float(Decimal(str(val)) / scale_factor) for val in x_scaled]
-            y = [float(Decimal(str(val)) / scale_factor) for val in y_scaled]
+            if tree_changed(i, tree):
+                x_scaled, y_scaled = tree.polygon.exterior.xy
+                x = [float(Decimal(str(val)) / scale_factor) for val in x_scaled]
+                y = [float(Decimal(str(val)) / scale_factor) for val in y_scaled]
 
-            # Check if this tree is highlighted
-            is_highlighted = selected_trees and i in selected_trees
-            has_collision = is_highlighted and selected_trees[i].has_collision
+                # Check if this tree is highlighted
+                is_highlighted = selected_trees and i in selected_trees
+                has_collision = is_highlighted and selected_trees[i].has_collision
 
-            # Update outline
-            tree_outlines[i].set_data(x, y)
-            if is_highlighted:
-                tree_outlines[i].set_color('red')
-                tree_outlines[i].set_linewidth(3)
-            else:
-                tree_outlines[i].set_color(colors[i])
-                tree_outlines[i].set_linewidth(1)
-            artists_to_return.append(tree_outlines[i])
+                # Update outline
+                tree_outlines[i].set_data(x, y)
+                if is_highlighted:
+                    tree_outlines[i].set_color('red')
+                    tree_outlines[i].set_linewidth(3)
+                else:
+                    tree_outlines[i].set_color(colors[i])
+                    tree_outlines[i].set_linewidth(1)
+                artists_to_return.append(tree_outlines[i])
 
-            # Update fill
-            tree_fills[i].set_xy(np.column_stack([x, y]))
-            if has_collision:
-                tree_fills[i].set_color('red')
-                tree_fills[i].set_alpha(0.7)
-            else:
-                tree_fills[i].set_color(colors[i])
-                tree_fills[i].set_alpha(0.5)
-            artists_to_return.append(tree_fills[i])
+                # Update fill
+                tree_fills[i].set_xy(np.column_stack([x, y]))
+                if has_collision:
+                    tree_fills[i].set_color('red')
+                    tree_fills[i].set_alpha(0.7)
+                else:
+                    tree_fills[i].set_color(colors[i])
+                    tree_fills[i].set_alpha(0.5)
+                artists_to_return.append(tree_fills[i])
         logger.debug("2")
 
         # Hide unused tree artists
@@ -115,8 +142,9 @@ def create_animation_from_snapshots(snapshots: list[Snapshot], fps=10):
             tree_fills[i].set_xy(np.array([]).reshape(0, 2))
 
         logger.debug("3")
-        # Update bounding box
-        if trees:
+        # Update bounding box (only if side length changed)
+        bounding_box_changed = frame == 0 or side_length != prev_side_length
+        if trees and bounding_box_changed:
             all_polygons = [t.polygon for t in trees]
             bounds = unary_union(all_polygons).bounds
 
@@ -141,7 +169,8 @@ def create_animation_from_snapshots(snapshots: list[Snapshot], fps=10):
             ax1.set_ylim(miny - padding, maxy + padding)
 
         logger.debug("4")
-        artists_to_return.append(bounding_rect)
+        if bounding_box_changed:
+            artists_to_return.append(bounding_rect)
 
         # Update text and title
         text.set_text(f'Iteration: {frame}')
