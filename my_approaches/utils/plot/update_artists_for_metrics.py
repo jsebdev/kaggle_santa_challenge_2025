@@ -1,19 +1,3 @@
-import matplotlib.pyplot as plt
-from decimal import Decimal
-from matplotlib.patches import Rectangle
-from shapely.ops import unary_union
-import numpy as np
-
-from utils.tree import ChristmasTree
-from utils.color_map import get_colors
-
-from utils.bounding_square import calculate_bounding_square
-from dataclasses import dataclass, field
-import logging
-
-
-
-
 def update_artists_for_metrics(axis, artists, snapshots, frame):
     line_artists, text = artists
     artists_to_update = []

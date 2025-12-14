@@ -1,31 +1,9 @@
-import matplotlib.pyplot as plt
-from decimal import Decimal
-from matplotlib.patches import Rectangle
-from shapely.ops import unary_union
-import numpy as np
-
-from utils.tree import ChristmasTree
-from utils.color_map import get_colors
-
-from utils.bounding_square import calculate_bounding_square
-from dataclasses import dataclass, field
-import logging
-
+from utils.color_map import get_color_for_metrics
 
 def get_artists_for_metrics(axis, metrics):
-    """
-    Initialize artists for metrics plot.
-
-    Args:
-        axis: Matplotlib axis for the metrics plot
-        metrics: Dictionary of metric names to values (from first snapshot)
-
-    Returns:
-        Tuple of (line_artists_dict, text_artist)
-    """
     metric_names = sorted(metrics.keys())  # Sort for consistency
     # Get enough colors for all metrics
-    colors = get_colors(max(len(metric_names), 10))
+    colors = get_color_for_metrics(len(metric_names))
 
     # Create line artists for each metric
     line_artists = {}

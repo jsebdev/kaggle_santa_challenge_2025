@@ -5,7 +5,7 @@ from shapely import snap
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from utils.plot import Snapshot, get_artists_for_configuration, get_artists_for_metrics, update_artists_between_snapshots, update_artists_for_metrics
-from utils.color_map import get_colors
+from utils.color_map import get_colors_for_trees
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ def create_animation_from_snapshots(snapshots: list[Snapshot], fps=10):
 
     # Initialize with first snapshot to set up artists
     max_trees = max(len(s.trees) for s in snapshots)
-    colors = get_colors(max_trees)
+    colors = get_colors_for_trees(max_trees)
     trees_artists = get_artists_for_configuration(
         axis0,
         colors=colors,

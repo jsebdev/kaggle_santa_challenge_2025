@@ -2,7 +2,7 @@ from matplotlib.patches import Rectangle
 from shapely.ops import unary_union
 
 from utils.tree import ChristmasTree
-from utils.color_map import get_colors
+from utils.color_map import get_colors_for_trees
 
 
 def get_artists_for_configuration(axis, colors):

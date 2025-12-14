@@ -5,7 +5,7 @@ from shapely.ops import unary_union
 import numpy as np
 
 from utils.tree import ChristmasTree
-from utils.color_map import get_colors
+from utils.color_map import get_colors_for_trees
 from utils.plot.models import Snapshot
 from utils.bounding_square import calculate_bounding_square
 from dataclasses import dataclass, field
