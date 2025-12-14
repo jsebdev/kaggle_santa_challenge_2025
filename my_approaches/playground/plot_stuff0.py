@@ -1,16 +1,37 @@
 # %%
-%load_ext autoreload
-%autoreload 2
-import sys
-sys.path.append('..')
+%matplotlib ipympl
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
-from utils.plot import plot_configuration
-from utils.tree import ChristmasTree
+fig, ax = plt.subplots()
 
-# %%
-trees = [
-    ChristmasTree(center_x=0, center_y=0, angle=0),
-    ChristmasTree(center_x=1, center_y=0, angle=0),
-]
+x = np.linspace(0, 2*np.pi, 100)
+line, = ax.plot(x, np.sin(x))
 
-plot_configuration(trees, side_length=1)
+# Create a text box inside the plot area
+text = ax.text(
+    0, 0,
+    # 0.05, 0.95,                # x, y in axis coordinates (0–1)
+    "",                        # initial text
+    transform=ax.transAxes,    # use axes-relative positioning
+    fontsize=12,
+    verticalalignment='top',
+    bbox=dict(boxstyle="round", fc="white", ec="black")
+)
+
+def update(frame):
+    # Update line
+    line.set_ydata(np.sin(x + frame/10))
+
+    # Update the text box
+    text.set_text(f"Frame: {frame}")
+
+    return line, text
+
+ani = FuncAnimation(fig, update, frames=100, interval=50, blit=True)
+
+# plt.show()
+from IPython.display import HTML
+plt.close()
+HTML(ani.to_jshtml())  # Display animation as HTML5 video

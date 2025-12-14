@@ -44,7 +44,7 @@ from shapely import affinity
 from shapely.geometry import Polygon
 from shapely.strtree import STRtree
 
-from utils.simulated_annealing.animate_snapshots import create_animation_from_snapshots, create_animation_from_snapshots
+from utils.simulated_annealing.animate_snapshots import Snapshot, create_animation_from_snapshots
 from utils.tree import ChristmasTree
 from utils.collision import has_collision
 from utils.bounding_square import calculate_bounding_square
@@ -154,15 +154,18 @@ def perturb_swap(trees, idx1, idx2):
 
 # %%
 
-def caputure_animation_snapshots(snapshots, trees, energy, iteration, has_dollision, moved_tree_idxs):
-    snapshot = {
-        'trees': [deepcopy(t) for t in trees],
-        'energy': energy,
-        'iteration': iteration,
-        'selected_trees': {}
-    }
-    for idx in moved_tree_idxs:
-        snapshot['selected_trees'][idx] = HighlightTreeData(has_collision=has_dollision)
+def caputure_animation_snapshots(snapshots: list[Snapshot],
+                                 trees: list[ChristmasTree],
+                                 energy,
+                                 has_dollision=False,
+                                 moved_tree_idxs=None):
+    snapshot = Snapshot(
+        trees=[deepcopy(t) for t in trees],
+        side_length=energy,
+    )
+    if moved_tree_idxs is not None:
+        for idx in moved_tree_idxs:
+            snapshot.selected_trees[idx] = HighlightTreeData(has_collision=has_dollision)
     snapshots.append(snapshot)
 
 
@@ -209,12 +212,8 @@ def simulated_annealing(
 
     n_trees = len(current_trees)
 
-    snapshots.append({
-        'trees': [deepcopy(t) for t in current_trees],
-        'energy': current_energy,
-        'temperature': temperature,
-        'iteration': total_iterations,
-    })
+    if animate:
+        caputure_animation_snapshots(snapshots, current_trees, current_energy,)
 
     # Main optimization loop: continue until temperature is very low
     while temperature > final_temp:
@@ -246,7 +245,7 @@ def simulated_annealing(
             # logger.debug('>>>>> 1_simulated_annealing.py:248 "collistion"')
             # logger.debug(collistion)
             if animate and (total_iterations % animation_interval == 0):
-                caputure_animation_snapshots(snapshots, new_trees, best_energy, iteration=total_iterations,
+                caputure_animation_snapshots(snapshots, new_trees, best_energy,
                                              has_dollision=collistion, moved_tree_idxs=moved_tree_idxs)
             if collistion:
                 continue
@@ -313,12 +312,12 @@ initial_trees = initialize_greedy(n_trees)
 result = simulated_annealing(
     initial_trees,
     initial_temp=1.0,
-    final_temp=0.01,
+    final_temp=0.98,
     cooling_rate=0.98,
     iterations_per_temp=50,
     verbose=True,
     animate=True,
-    animation_interval=30,
+    animation_interval=1,
 )
 # best_trees, best_energy, history, snapshots
 best_trees = result['best_trees']
@@ -328,10 +327,9 @@ best_iteration = result['best_iteration']
 
 print(f"Best configuration found at iteration {best_iteration} with bounding square side length: {best_energy}")
 
-plot_configuration(best_trees, side_length=best_energy)
+# plot_configuration(best_trees, side_length=best_energy)
 
-
-anim = create_animation_from_snapshots(snapshots, fps=20)
+anim = create_animation_from_snapshots(snapshots, fps=10)
 from IPython.display import HTML
 plt.close()
 HTML(anim.to_jshtml())  # Display animation as HTML5 video
