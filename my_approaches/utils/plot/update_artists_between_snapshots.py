@@ -6,60 +6,10 @@ import numpy as np
 
 from utils.tree import ChristmasTree
 from utils.color_map import get_colors
-
-from .bounding_square import calculate_bounding_square
+from utils.plot.models import Snapshot
+from utils.bounding_square import calculate_bounding_square
 from dataclasses import dataclass, field
 import logging
-
-
-logger = logging.getLogger(__name__)
-
-
-@dataclass
-class HighlightTreeData:
-    has_collision: bool
-
-
-@dataclass
-class Snapshot:
-    trees: list[ChristmasTree]
-    side_length: Decimal
-    selected_trees: dict[int, HighlightTreeData] = field(default_factory=dict)
-    text: str = ""
-    title: str = ""
-    metrics: dict[str, float] = field(default_factory=dict)
-
-
-def get_artists_for_configuration(axis, colors):
-    tree_outlines = []
-    tree_fills = []
-    for i in range(len(colors)):
-        (outline,) = axis.plot([], [], color=colors[i], linewidth=1)
-        fill = axis.fill([], [], alpha=0.5, color=colors[i])[0]
-        tree_outlines.append(outline)
-        tree_fills.append(fill)
-
-    # Create bounding box rectangle
-    bounding_rect = Rectangle(
-        (0, 0), 1, 1, fill=False, edgecolor="red", linewidth=2, linestyle="--"
-    )
-    axis.add_patch(bounding_rect)
-
-    # Create text artist
-    text = axis.text(
-        0.05,
-        0.95,
-        "",
-        transform=axis.transAxes,
-        fontsize=12,
-        verticalalignment="top",
-        bbox=dict(boxstyle="round", fc="white", ec="black"),
-    )
-
-    # Set up initial axis properties
-    axis.set_aspect("equal", adjustable="box")
-    axis.grid(True, alpha=0.3)
-    return tree_outlines, tree_fills, bounding_rect, text
 
 def update_artists_between_snapshots(
     axis,
@@ -185,29 +135,3 @@ def update_artists_between_snapshots(
     artists_to_update.append(text)
 
     return artists_to_update
-
-def plot_configuration(trees, side_length=None, title=None, show=True) -> plt.Axes:
-    """
-    Visualize a tree configuration with its bounding square.
-
-    Args:
-        trees: List of ChristmasTree objects
-        side_length: Side length of bounding square (optional, will be calculated if not provided)
-        title: Plot title
-        show: Whether to call plt.show() immediately (default True)
-    """
-    _, axis = plt.subplots(figsize=(8, 8))
-    artists = get_artists_for_configuration(
-        axis,
-        get_colors(len(trees)),
-    )
-    update_artists_between_snapshots(
-        axis,
-        artists,
-        Snapshot(trees=trees, side_length=side_length or calculate_bounding_square(trees)),
-        get_colors(len(trees)),
-    )
-    plt.tight_layout()
-    if show:
-        plt.show()
-    return axis

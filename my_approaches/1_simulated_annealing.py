@@ -88,20 +88,20 @@ def perturb_rotation(trees, tree_idx, max_angle=15):
 
 # %%
 def capture_animation_snapshots(snapshots: list[Snapshot],
-                                 trees: list[ChristmasTree],
-                                 energy,
-                                 iteration,
-                                 temperature,
-                                 has_dollision=False,
-                                 moved_tree_idxs=None,
-):
+                                trees: list[ChristmasTree],
+                                energy: Decimal,
+                                iteration: int,
+                                temperature: float,
+                                has_dollision=False,
+                                moved_tree_idxs=None,
+                                ):
     snapshot = Snapshot(
         trees=[deepcopy(t) for t in trees],
         side_length=energy,
         text=f"Iteration: {iteration}\nBounding Square Side Length: {energy:.6f}",
         metrics={
             "temperature": temperature,
-            "side_length": energy,
+            "side_length": float(energy),
         }
     )
     if moved_tree_idxs is not None:
@@ -256,6 +256,7 @@ best_iteration = result['best_iteration']
 
 print(f"Best configuration found at iteration {best_iteration} with bounding square side length: {best_energy}")
 
+# %%
 anim = create_animation_from_snapshots(snapshots, fps=10)
 from IPython.display import HTML
 plt.close()
