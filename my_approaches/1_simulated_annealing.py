@@ -48,7 +48,7 @@ from utils.animate import create_animation_from_snapshots
 from utils.tree import ChristmasTree
 from utils.collision import has_collision
 from utils.bounding_square import calculate_bounding_square
-from utils.place_tree import initialize_greedy
+from utils.initialize_greedy_0 import initialize_greedy
 from utils.plot import HighlightTreeData, Snapshot, plot_configuration
 from utils.logging import configure_logging
 

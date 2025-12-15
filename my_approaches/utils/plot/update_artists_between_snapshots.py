@@ -118,10 +118,8 @@ def update_artists_between_snapshots(
         height = maxy - miny
         # Update axis limits
         padding = Decimal(0.5)
-        # axis.set_xlim(minx - padding, maxx + padding)
-        # axis.set_ylim(miny - padding, maxy + padding)
-        axis.set_xlim(-padding, maxx + padding)
-        axis.set_ylim(-padding, maxy + padding)
+        axis.set_xlim(min(0, minx) - padding, maxx + padding)
+        axis.set_ylim(min(0, miny) - padding, maxy + padding)
 
         if side_length is not None:
             square_x = minx if width >= height else minx - \
