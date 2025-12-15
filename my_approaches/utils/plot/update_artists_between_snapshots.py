@@ -126,7 +126,6 @@ def update_artists_between_snapshots(
         axis.set_xlim(minx - padding, maxx + padding)
         axis.set_ylim(miny - padding, maxy + padding)
 
-    if bounding_box_changed:
         artists_to_update.append(bounding_rect)
 
     # Update text and title

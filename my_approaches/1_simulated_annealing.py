@@ -92,13 +92,14 @@ def capture_animation_snapshots(snapshots: list[Snapshot],
                                 energy: Decimal,
                                 iteration: int,
                                 temperature: float,
+                                accepted_moves: int,
                                 has_dollision=False,
                                 moved_tree_idxs=None,
                                 ):
     snapshot = Snapshot(
         trees=[deepcopy(t) for t in trees],
         side_length=energy,
-        text=f"Iteration: {iteration}\nBounding Square Side Length: {energy:.6f}",
+            text=f"Iteration: {iteration}\nBounding Square Side Length: {energy:.6f}\naccepted moves: {accepted_moves}",
         metrics={
             "temperature": temperature,
             "side_length": float(energy),
@@ -116,7 +117,7 @@ def simulated_annealing(
     final_temp=0.01,
     cooling_rate=0.995,
     iterations_per_temp=100,
-    verbose=True,
+    verbose=False,
     animate=False,
     animation_interval=1,
 ):
@@ -143,6 +144,7 @@ def simulated_annealing(
     best_trees = [deepcopy(t) for t in current_trees]
     best_energy = current_energy
     best_iteration = 0
+    best_accepted_move = 0
 
     temperature = initial_temp
     history = []
@@ -154,7 +156,7 @@ def simulated_annealing(
     n_trees = len(current_trees)
 
     if animate:
-        capture_animation_snapshots(snapshots, current_trees, current_energy, total_iterations, temperature)
+        capture_animation_snapshots(snapshots, current_trees, current_energy, total_iterations, temperature, accepted_moves)
 
     # Main optimization loop: continue until temperature is very low
     while temperature > final_temp:
@@ -179,10 +181,10 @@ def simulated_annealing(
 
             # Reject configurations with overlapping trees
             collistion = has_collision(new_trees)
-            if animate and (total_iterations % animation_interval == 0):
-                capture_animation_snapshots(snapshots, new_trees, best_energy, total_iterations, temperature,
-                                             has_dollision=collistion, moved_tree_idxs=moved_tree_idxs)
             if collistion:
+                if animate and (total_iterations % animation_interval == 0):
+                    capture_animation_snapshots(snapshots, new_trees, current_energy, total_iterations, temperature, accepted_moves,
+                                                 has_dollision=collistion, moved_tree_idxs=moved_tree_idxs)
                 continue
 
             # Calculate how much worse/better the new configuration is
@@ -193,12 +195,16 @@ def simulated_annealing(
                 current_trees = new_trees
                 current_energy = new_energy
                 accepted_moves += 1
+                if animate and (total_iterations % animation_interval == 0):
+                    capture_animation_snapshots(snapshots, new_trees, current_energy, total_iterations, temperature, accepted_moves,
+                                                 has_dollision=collistion, moved_tree_idxs=moved_tree_idxs)
 
                 # Track the best solution ever seen
                 if current_energy < best_energy:
                     best_trees = [deepcopy(t) for t in current_trees]
                     best_energy = current_energy
                     best_iteration = total_iterations
+                    best_accepted_move = accepted_moves
 
         history.append({
             'temperature': temperature,
@@ -229,6 +235,9 @@ def simulated_annealing(
         'history': history,
         'snapshots': snapshots,
         'best_iteration': best_iteration,
+        'best_accepted_move': best_accepted_move,
+        'total_iterations': total_iterations,
+        'total_accepted_moves': accepted_moves,
     }
 
 
@@ -241,20 +250,24 @@ initial_trees = initialize_greedy(n_trees)
 result = simulated_annealing(
     initial_trees,
     initial_temp=1.0,
-    final_temp=0.98,
+    final_temp=0.01,
     cooling_rate=0.98,
-    iterations_per_temp=50,
-    verbose=True,
+    iterations_per_temp=100,
+    verbose=False,
     animate=True,
-    animation_interval=1,
+    animation_interval=10,
 )
-# best_trees, best_energy, history, snapshots
+# %%
 best_trees = result['best_trees']
 best_energy = result['best_energy']
 snapshots = result['snapshots']
 best_iteration = result['best_iteration']
-
-print(f"Best configuration found at iteration {best_iteration} with bounding square side length: {best_energy}")
+best_accepted_move = result['best_accepted_move']
+total_accepted_moves = result['total_accepted_moves']
+total_iterations = result['total_iterations']
+print(f"Best configuration found at move {best_accepted_move} with bounding square side length: {best_energy}")
+print(f"Total iterations: {total_iterations}, Total accepted moves: {total_accepted_moves}")
+print(f"total number of snapshots captured: {len(snapshots)}")
 # %%
 plot_configuration(best_trees, side_length=best_energy)
 
@@ -263,6 +276,6 @@ anim = create_animation_from_snapshots(snapshots, fps=10, metrics_factor={
     "side_length": 1.0,
     "temperature": 1.0,
 })
-from IPython.display import HTML
-plt.close()
-HTML(anim.to_jshtml())  # Display animation as HTML5 video
+# from IPython.display import HTML
+# plt.close()
+# HTML(anim.to_jshtml())  # Display animation as HTML5 video
