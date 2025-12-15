@@ -11,10 +11,13 @@ from utils.color_map import get_colors_for_trees
 logger = logging.getLogger(__name__)
 
 
-def create_animation_from_snapshots(snapshots: list[Snapshot], metrics_factor, fps=10):
+def create_animation_from_snapshots(snapshots: list[Snapshot], metrics_factor = {}, fps=10):
     fig, (axis0, axis1) = plt.subplots(1, 2, figsize=(18, 9))
+    print('>>>>> animate.py:16 "len(snapshots)"')
+    print(len(snapshots))
 
     # Initialize with first snapshot to set up artists
+    snapshots[0].trees
     max_trees = max(len(s.trees) for s in snapshots)
     colors = get_colors_for_trees(max_trees)
     trees_artists = get_artists_for_configuration(

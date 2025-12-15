@@ -1,6 +1,6 @@
 from utils.color_map import get_color_for_metrics
 
-def get_artists_for_metrics(axis, metrics, metrics_factor=None):
+def get_artists_for_metrics(axis, metrics, metrics_factor={}):
     metric_names = sorted(metrics.keys())  # Sort for consistency
     # Get enough colors for all metrics
     colors = get_color_for_metrics(len(metric_names))

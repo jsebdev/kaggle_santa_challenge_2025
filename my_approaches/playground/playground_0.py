@@ -3,16 +3,22 @@
 %autoreload 2
 
 import sys
+import matplotlib.pyplot as plt
 
 sys.path.append('..')
 sys.path.append('../../')
 
+from my_approaches.utils.animate import create_animation_from_snapshots
+from my_approaches.utils.initialize_at_corner import initialize_at_corner
 from utils.plot import plot_configuration
 from utils.tree import ChristmasTree
 
 
 # %%
-tree = ChristmasTree(center_x='0', center_y='0', angle='0')
+trees, snapshots = initialize_at_corner(num_trees=1, seed=42, capture_snapshots=True)
 
-plot_configuration(trees=[tree], title="Single Tree Test")
-
+# %%
+anim = create_animation_from_snapshots(snapshots)
+plt.close()
+from IPython.display import HTML
+HTML(anim.to_jshtml())  # Display animation as HTML5 video

@@ -1,4 +1,4 @@
-def update_artists_for_metrics(axis, artists, snapshots, frame, metrics_factor):
+def update_artists_for_metrics(axis, artists, snapshots, frame, metrics_factor={}):
     line_artists, text = artists
     artists_to_update = []
 

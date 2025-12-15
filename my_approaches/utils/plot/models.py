@@ -13,7 +13,7 @@ class HighlightTreeData:
 @dataclass
 class Snapshot:
     trees: list[ChristmasTree]
-    side_length: Decimal
+    side_length: Decimal | None = None
     selected_trees: dict[int, HighlightTreeData] = field(default_factory=dict)
     text: str = ""
     title: str = ""
