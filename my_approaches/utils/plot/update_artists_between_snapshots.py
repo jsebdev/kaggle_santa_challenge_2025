@@ -32,8 +32,6 @@ def update_artists_between_snapshots(
 
     artists_to_update = []
 
-    print('>>>>> update_artists_between_snapshots.py:35 "snapshot"')
-    print(snapshot)
     def tree_changed(i, tree):
         """Check if tree position or selection state changed."""
         if prev_snapshot is None or i >= len(prev_trees):
@@ -84,7 +82,6 @@ def update_artists_between_snapshots(
             tree_outlines[i].set_color(colors[i])
             tree_outlines[i].set_linewidth(1)
         artists_to_update.append(tree_outlines[i])
-        print(f"appended tree_outlines{i}")
         # Update fill
         tree_fills[i].set_xy(np.column_stack([x, y]))
         if has_collision:
@@ -94,7 +91,6 @@ def update_artists_between_snapshots(
             tree_fills[i].set_color(colors[i])
             tree_fills[i].set_alpha(0.5)
         artists_to_update.append(tree_fills[i])
-        print(f"appended tree_fills{i}")
 
     # Hide unused tree artists
     for i in range(len(trees), max_trees):
@@ -103,11 +99,8 @@ def update_artists_between_snapshots(
 
     # Update bounding box (only if side length changed)
     bounding_box_changed = side_length != prev_side_length or (prev_snapshot is None)
-    print('>>>>> update_artists_between_snapshots.py:108 "bounding_box_changed"')
-    print(bounding_box_changed)
     if bounding_box_changed:
         artists_to_update.append(bounding_rect)
-        print("appended bounding_rect")
         all_polygons = [t.polygon for t in trees]
         bounds = unary_union(all_polygons).bounds
         minx = Decimal(str(bounds[0])) / scale_factor
@@ -140,7 +133,4 @@ def update_artists_between_snapshots(
     text.set_text(snapshot.text)
     axis.set_title(snapshot.title)
     artists_to_update.append(text)
-    print("appended text")
-    print('>>>>> update_artists_between_snapshots.py:146 "artists_to_update"')
-    print(artists_to_update)
     return artists_to_update

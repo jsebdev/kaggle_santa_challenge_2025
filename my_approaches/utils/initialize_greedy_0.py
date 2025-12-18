@@ -9,7 +9,7 @@ from shapely.strtree import STRtree
 from .tree import ChristmasTree
 
 
-def initialize_greedy(num_trees, seed=None):
+def initialize_greedy_0(num_trees, seed=None):
     """
     Create an initial configuration using a simple greedy placement strategy.
 

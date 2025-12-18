@@ -5,9 +5,9 @@ class AppOnlyFilter(logging.Filter):
         allowed_modules = ["utils", "__main__"]
         return any(record.name.startswith(module) for module in allowed_modules)
 
-def configure_logging(log_file_name="default.log"):
+def configure_logging(log_file_name="default.log", log_level=logging.DEBUG):
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(log_level)
 
     # Clear any existing handlers to avoid duplicates
     # This is important for Jupyter notebooks where cells may be re-run

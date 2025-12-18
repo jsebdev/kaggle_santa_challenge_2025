@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from shapely import snap
 
@@ -11,10 +12,23 @@ from utils.color_map import get_colors_for_trees
 logger = logging.getLogger(__name__)
 
 
+def _precompute_metric_data(snapshots: list[Snapshot], metrics_factor: dict) -> dict:
+    """Pre-compute all metric data once to avoid O(N²) complexity during animation."""
+    metric_data = {}
+
+    for i, snapshot in enumerate(snapshots):
+        for metric_name, value in snapshot.metrics.items():
+            if metric_name not in metric_data:
+                metric_data[metric_name] = {'x': [], 'y': []}
+            metric_data[metric_name]['x'].append(i)
+            metric_factor = metrics_factor.get(metric_name, 1.0)
+            metric_data[metric_name]['y'].append(value * metric_factor)
+
+    return metric_data
+
+
 def create_animation_from_snapshots(snapshots: list[Snapshot], metrics_factor = {}, fps=10):
     fig, (axis0, axis1) = plt.subplots(1, 2, figsize=(18, 9))
-    print('>>>>> animate.py:16 "len(snapshots)"')
-    print(len(snapshots))
 
     # Initialize with first snapshot to set up artists
     snapshots[0].trees
@@ -30,24 +44,31 @@ def create_animation_from_snapshots(snapshots: list[Snapshot], metrics_factor = 
         metrics_factor,
     )
 
+    # Pre-compute all metric data once (O(N) instead of O(N²))
+    precomputed_metric_data = _precompute_metric_data(snapshots, metrics_factor)
+
     def update(frame: int):
-        snapshot = snapshots[frame]
-        prev_snapshot = snapshots[frame - 1] if frame > 0 else None
-        artists_to_update_in_trees = update_artists_between_snapshots(
-            axis0,
-            trees_artists,
-            snapshot,
-            colors,
-            prev_snapshot,
-        )
-        artists_to_update_in_metrics = update_artists_for_metrics(
-            axis1,
-            metrics_artists,
-            snapshots,
-            frame,
-            metrics_factor,
-        )
-        return artists_to_update_in_trees + artists_to_update_in_metrics
+        try:
+            snapshot = snapshots[frame]
+            prev_snapshot = snapshots[frame - 1] if frame > 0 else None
+            artists_to_update_in_trees = update_artists_between_snapshots(
+                axis0,
+                trees_artists,
+                snapshot,
+                colors,
+                prev_snapshot,
+            )
+            artists_to_update_in_metrics = update_artists_for_metrics(
+                axis1,
+                metrics_artists,
+                precomputed_metric_data,
+                snapshots,
+                frame,
+            )
+            return artists_to_update_in_trees + artists_to_update_in_metrics
+        except Exception as e:
+            logger.error(f"Error updating frame {frame}: {e}")
+            logger.error(traceback.format_exc())
 
     anim = FuncAnimation(
         fig, update, frames=len(snapshots), interval=1000 / fps, repeat=True, blit=True

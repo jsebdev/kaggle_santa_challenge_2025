@@ -32,7 +32,7 @@ sys.path.append('.')
 # %%
 import math
 import random
-from decimal import Decimal, getcontext
+from decimal import Decimal
 from copy import deepcopy
 
 import logging
@@ -48,14 +48,13 @@ from utils.animate import create_animation_from_snapshots
 from utils.tree import ChristmasTree
 from utils.collision import has_collision
 from utils.bounding_square import calculate_bounding_square
-from utils.initialize_greedy_0 import initialize_greedy
+from utils.initialize_greedy_0 import initialize_greedy_0
 from utils.plot import HighlightTreeData, Snapshot, plot_configuration
 from utils.logging import configure_logging
 
 # %%
 configure_logging('1_simulated_annealing.log')
 logger = logging.getLogger(__name__)
-getcontext().prec = 25
 pd.set_option('display.float_format', '{:.12f}'.format)
 
 # %%
@@ -245,7 +244,7 @@ def simulated_annealing(
 n_trees = 3
 seed = 42
 random.seed(seed)
-initial_trees = initialize_greedy(n_trees)
+initial_trees = initialize_greedy_0(n_trees)
 
 result = simulated_annealing(
     initial_trees,
@@ -279,3 +278,4 @@ anim = create_animation_from_snapshots(snapshots, fps=10, metrics_factor={
 # from IPython.display import HTML
 # plt.close()
 # HTML(anim.to_jshtml())  # Display animation as HTML5 video
+

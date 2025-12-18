@@ -14,6 +14,67 @@ from shapely.geometry import Polygon
 # Set precision for Decimal
 getcontext().prec = 25
 
+# Fixed tree dimensions
+trunk_w = Decimal('0.15')
+trunk_h = Decimal('0.2')
+base_w = Decimal('0.7')
+mid_w = Decimal('0.4')
+top_w = Decimal('0.25')
+tip_y = Decimal('0.8')
+tier_1_y = Decimal('0.5')
+tier_2_y = Decimal('0.25')
+base_y = Decimal('0.0')
+trunk_bottom_y = -trunk_h
+tree_points = [
+    # Start at Tip
+    (Decimal("0.0"), tip_y),
+    # Right side - Top Tier
+    (top_w / Decimal("2"), tier_1_y),
+    (top_w / Decimal("4"), tier_1_y),
+    # Right side - Middle Tier
+    (mid_w / Decimal("2"), tier_2_y),
+    (mid_w / Decimal("4"), tier_2_y),
+    # Right side - Bottom Tier
+    (base_w / Decimal("2"), base_y),
+    # Right Trunk
+    (trunk_w / Decimal("2"), base_y),
+    (
+        trunk_w / Decimal("2"),
+        trunk_bottom_y,
+    ),
+    # Left Trunk
+    (
+        -(trunk_w / Decimal("2")),
+        trunk_bottom_y,
+    ),
+    (
+        -(trunk_w / Decimal("2")),
+        base_y,
+    ),
+    # Left side - Bottom Tier
+    (
+        -(base_w / Decimal("2")),
+        base_y,
+    ),
+    # Left side - Middle Tier
+    (
+        -(mid_w / Decimal("4")),
+        tier_2_y,
+    ),
+    (
+        -(mid_w / Decimal("2")),
+        tier_2_y,
+    ),
+    # Left side - Top Tier
+    (
+        -(top_w / Decimal("4")),
+        tier_1_y,
+    ),
+    (
+        -(top_w / Decimal("2")),
+        tier_1_y,
+    ),
+]
 
 class ChristmasTree:
     """Represents a single, rotatable Christmas tree of a fixed size.
@@ -57,70 +118,8 @@ class ChristmasTree:
         Returns:
             Shapely Polygon object
         """
-        # Fixed tree dimensions
-        trunk_w = Decimal('0.15')
-        trunk_h = Decimal('0.2')
-        base_w = Decimal('0.7')
-        mid_w = Decimal('0.4')
-        top_w = Decimal('0.25')
-        tip_y = Decimal('0.8')
-        tier_1_y = Decimal('0.5')
-        tier_2_y = Decimal('0.25')
-        base_y = Decimal('0.0')
-        trunk_bottom_y = -trunk_h
-
         # Build polygon in scaled space for Shapely precision
-        self._tree_points = [
-            # Start at Tip
-            (Decimal("0.0"), tip_y),
-            # Right side - Top Tier
-            (top_w / Decimal("2"), tier_1_y),
-            (top_w / Decimal("4"), tier_1_y),
-            # Right side - Middle Tier
-            (mid_w / Decimal("2"), tier_2_y),
-            (mid_w / Decimal("4"), tier_2_y),
-            # Right side - Bottom Tier
-            (base_w / Decimal("2"), base_y),
-            # Right Trunk
-            (trunk_w / Decimal("2"), base_y),
-            (
-                trunk_w / Decimal("2"),
-                trunk_bottom_y,
-            ),
-            # Left Trunk
-            (
-                -(trunk_w / Decimal("2")),
-                trunk_bottom_y,
-            ),
-            (
-                -(trunk_w / Decimal("2")),
-                base_y,
-            ),
-            # Left side - Bottom Tier
-            (
-                -(base_w / Decimal("2")),
-                base_y,
-            ),
-            # Left side - Middle Tier
-            (
-                -(mid_w / Decimal("4")),
-                tier_2_y,
-            ),
-            (
-                -(mid_w / Decimal("2")),
-                tier_2_y,
-            ),
-            # Left side - Top Tier
-            (
-                -(top_w / Decimal("4")),
-                tier_1_y,
-            ),
-            (
-                -(top_w / Decimal("2")),
-                tier_1_y,
-            ),
-        ]
-        scaled_points = [(x * self._scale_factor, y * self._scale_factor) for x, y in self._tree_points]
+        scaled_points = [(x * self._scale_factor, y * self._scale_factor) for x, y in tree_points]
         initial_polygon = Polygon(scaled_points)
         rotated = affinity.rotate(
             initial_polygon, float(self.angle), origin=(0, 0))
@@ -175,3 +174,17 @@ class ChristmasTree:
         self.center_y = Decimal(str(y))
         self.angle = Decimal(str(angle))
         self.polygon = self._build_polygon()
+
+    def get_polygon_points(self):
+        """Get the polygon points in logical (unscaled) coordinates.
+
+        Returns the actual world coordinates of the tree polygon vertices,
+        properly unscaled from the internal representation.
+
+        Returns:
+            List of (x, y) tuples representing polygon vertices in logical space
+        """
+        # Get the scaled polygon coordinates
+        coords = list(self.polygon.exterior.coords)
+        # Unscale and return as list of tuples
+        return [(float(Decimal(x) / self._scale_factor), float(Decimal(y) / self._scale_factor)) for x, y in coords]
